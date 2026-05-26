@@ -36,6 +36,12 @@ Run Newton's rigid-MPM two-way coupling example:
 /root/human2robot/.venvs/act_diverse/bin/python scripts/run_newton_mpm_spike.py --example mpm_twoway_coupling --output-dir outputs/newton_mpm_twoway --num-frames 48
 ```
 
+Run the MuJoCo Franka to Newton MPM bridge:
+
+```bash
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py
+```
+
 Generated artifacts:
 
 ```text
@@ -51,6 +57,9 @@ outputs/newton_mpm_spike/mpm_granular.usd
 outputs/newton_mpm_spike/mpm_granular_preview.mp4
 outputs/newton_mpm_twoway/mpm_twoway_coupling.usd
 outputs/newton_mpm_twoway/mpm_twoway_coupling_preview.mp4
+outputs/mujoco_newton_mpm_bridge/mujoco_franka_newton_mpm_bridge.mp4
+outputs/mujoco_newton_mpm_bridge/newton_mpm_sand_camera_layer.mp4
+outputs/mujoco_newton_mpm_bridge/newton_mpm_bridge_log.npz
 ```
 
 The video contains top, side, and front projections of the same 3D material point state. The orange arrow and force plot show the reaction wrench computed from MPM contact impulses.
