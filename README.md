@@ -18,6 +18,12 @@ Run the MuJoCo Franka render coupled to the 3D MPM sand engine:
 /root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_3d_mpm_cosim.py
 ```
 
+Run the density-style renderer, which avoids drawing MPM material points as bead-like spheres:
+
+```bash
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_3d_density_render_demo.py
+```
+
 Generated artifacts:
 
 ```text
@@ -28,6 +34,7 @@ outputs/3d_mpm_blade/wrench_log.csv
 outputs/3d_mpm_blade/final_state_and_wrench_log.npz
 outputs/3d_mpm_blade/resolved_config.json
 outputs/mujoco_3d_mpm_cosim/mujoco_franka_3d_mpm_interaction.mp4
+outputs/3d_mpm_density_render/sand3d_density_render.mp4
 ```
 
 The video contains top, side, and front projections of the same 3D material point state. The orange arrow and force plot show the reaction wrench computed from MPM contact impulses.
