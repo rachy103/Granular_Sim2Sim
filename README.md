@@ -6,47 +6,70 @@ The goal is not to hide granular media behind a robot policy. The goal is to mak
 
 ## Current Demo
 
+## Fresh Setup
+
+The repo is intended to run from a normal Python environment. The tested path is
+WSL2 plus an NVIDIA CUDA-capable GPU, but the code does not depend on the local
+venv name used during development.
+
+```bash
+git clone https://github.com/rachy103/granular-robot.git
+cd granular-robot
+
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[mujoco,newton,dev]"
+
+git clone --depth 1 https://github.com/google-deepmind/mujoco_menagerie.git
+pytest
+```
+
+If EGL rendering is available, the MuJoCo scripts default to headless rendering
+through `MUJOCO_GL=egl`. On a CPU-only machine, start with the standalone density
+demo before running the Newton bridge.
+
 Run the 3D blade interaction demo:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_3d_blade_demo.py --config configs/sand3d_blade_demo.json
+python scripts/run_3d_blade_demo.py --config configs/sand3d_blade_demo.json
 ```
 
 Run the MuJoCo Franka render coupled to the 3D MPM sand engine:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_3d_mpm_cosim.py
+python scripts/run_mujoco_3d_mpm_cosim.py
 ```
 
 Run the density-style renderer, which avoids drawing MPM material points as bead-like spheres:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_3d_density_render_demo.py
+python scripts/run_3d_density_render_demo.py
 ```
 
 Run the Newton MPM spike and produce a local preview from Newton's USD particles:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_newton_mpm_spike.py --example mpm_granular --num-frames 48 --voxel-size 0.05
+python scripts/run_newton_mpm_spike.py --example mpm_granular --num-frames 48 --voxel-size 0.05
 ```
 
 Run Newton's rigid-MPM two-way coupling example:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_newton_mpm_spike.py --example mpm_twoway_coupling --output-dir outputs/newton_mpm_twoway --num-frames 48
+python scripts/run_newton_mpm_spike.py --example mpm_twoway_coupling --output-dir outputs/newton_mpm_twoway --num-frames 48
 ```
 
 Run the MuJoCo Franka to Newton MPM bridge:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0 --sand-render-mode heightfield --render-blur 2.4 --alpha-cutoff 0.060 --alpha-gain 0.48
+python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0 --sand-render-mode heightfield --render-blur 2.4 --alpha-cutoff 0.060 --alpha-gain 0.48
 ```
 
 Use screen-density rendering or point-splat rendering for comparison/debug:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode density --voxel-size 0.032 --particles-per-cell 3.0
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode point --voxel-size 0.032 --particles-per-cell 3.0 --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
+python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode density --voxel-size 0.032 --particles-per-cell 3.0
+python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode point --voxel-size 0.032 --particles-per-cell 3.0 --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
 ```
 
 Generated artifacts:
