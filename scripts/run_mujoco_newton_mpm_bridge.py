@@ -14,6 +14,7 @@ granular state behind MuJoCo visual spheres.
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -64,6 +65,20 @@ def sum_collider_impulses(
     i = wp.tid()
     if collider_ids[i] == target_collider:
         wp.atomic_add(impulse_sum, 0, collider_impulses[i])
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--voxel-size", type=float, default=0.045)
+    parser.add_argument("--particles-per-cell", type=float, default=3.0)
+    parser.add_argument("--frames", type=int, default=72)
+    parser.add_argument("--steps-per-frame", type=int, default=5)
+    parser.add_argument("--render-radius", type=int, default=5)
+    parser.add_argument("--render-blur", type=float, default=2.0)
+    parser.add_argument("--alpha-blur", type=float, default=1.2)
+    parser.add_argument("--alpha-cutoff", type=float, default=0.04)
+    parser.add_argument("--alpha-gain", type=float, default=0.60)
+    return parser.parse_args()
 
 
 def quat_xyzw_from_matrix(mat: np.ndarray) -> np.ndarray:
@@ -243,9 +258,10 @@ def planned_bridge_ctrl(waypoints: list[np.ndarray], sim_time: float, total_time
 
 
 class NewtonSandBridge:
-    def __init__(self, device: str = "cuda:0", voxel_size: float = 0.045):
+    def __init__(self, device: str = "cuda:0", voxel_size: float = 0.045, particles_per_cell: float = 3.0):
         self.device = device
         self.voxel_size = voxel_size
+        self.particles_per_cell = particles_per_cell
         self.tool_half = np.asarray([0.082, 0.122, 0.015], dtype=np.float32)
 
         collider_builder = newton.ModelBuilder()
@@ -318,11 +334,10 @@ class NewtonSandBridge:
         )
 
     def _emit_sand_particles(self, builder: newton.ModelBuilder) -> None:
-        ppc = 3.0
         density = 1550.0
         lo = np.asarray([0.205, 0.125, 0.035], dtype=np.float64)
         hi = np.asarray([0.835, 0.435, 0.205], dtype=np.float64)
-        res = np.asarray(np.ceil(ppc * (hi - lo) / self.voxel_size), dtype=int)
+        res = np.asarray(np.ceil(self.particles_per_cell * (hi - lo) / self.voxel_size), dtype=int)
         cell = (hi - lo) / res
         mass = float(np.prod(cell) * density)
         radius = float(np.max(cell) * 0.50)
@@ -454,6 +469,7 @@ def draw_bridge_overlay(frame_bgr: np.ndarray, force_world: np.ndarray, qerr: fl
 
 
 def run() -> None:
+    args = parse_args()
     make_scene_xml()
     model = mujoco.MjModel.from_xml_path(SCENE_XML.as_posix())
     data = mujoco.MjData(model)
@@ -473,10 +489,14 @@ def run() -> None:
     data.ctrl[:] = planned_bridge_ctrl(waypoints, 0.0, 1.0)
     mujoco.mj_forward(model, data)
 
-    bridge = NewtonSandBridge(device="cuda:0", voxel_size=0.045)
+    bridge = NewtonSandBridge(
+        device="cuda:0",
+        voxel_size=args.voxel_size,
+        particles_per_cell=args.particles_per_cell,
+    )
     mj_dt = float(model.opt.timestep)
-    frames_n = 72
-    steps_per_frame = 5
+    frames_n = args.frames
+    steps_per_frame = args.steps_per_frame
     total_time = frames_n * steps_per_frame * mj_dt
     force_feedback_scale = 0.018
     print(
@@ -525,7 +545,11 @@ def run() -> None:
             particle_pos,
             1280,
             720,
-            radius=5,
+            radius=args.render_radius,
+            blur_sigma=args.render_blur,
+            alpha_blur_sigma=args.alpha_blur,
+            alpha_cutoff=args.alpha_cutoff,
+            alpha_gain=args.alpha_gain,
         )
         composite = composite_sand(robot_rgb, robot_depth, sand_rgb, sand_alpha, sand_depth)
         desired = planned_bridge_ctrl(waypoints, float(data.time), total_time)
@@ -566,6 +590,10 @@ def run() -> None:
         tool_pos=np.asarray(log_tool, dtype=np.float32),
         particle_pos=np.asarray(log_particle_pos, dtype=object),
         voxel_size=np.asarray(bridge.voxel_size, dtype=np.float32),
+        particles_per_cell=np.asarray(bridge.particles_per_cell, dtype=np.float32),
+        render_radius=np.asarray(args.render_radius, dtype=np.int32),
+        render_blur=np.asarray(args.render_blur, dtype=np.float32),
+        alpha_blur=np.asarray(args.alpha_blur, dtype=np.float32),
     )
     print(f"scene={SCENE_XML}")
     print(f"video={VIDEO_PATH}")

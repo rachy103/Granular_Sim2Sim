@@ -42,6 +42,12 @@ Run the MuJoCo Franka to Newton MPM bridge:
 /root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py
 ```
 
+Use finer Newton particles and a smaller preview splat:
+
+```bash
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0 --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
+```
+
 Generated artifacts:
 
 ```text

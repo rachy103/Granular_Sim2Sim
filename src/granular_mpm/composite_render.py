@@ -34,6 +34,10 @@ def render_sand_layer(
     width: int,
     height: int,
     radius: int = 4,
+    blur_sigma: float = 2.0,
+    alpha_blur_sigma: float = 1.2,
+    alpha_cutoff: float = 0.04,
+    alpha_gain: float = 0.60,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     uv, depth, valid = project_points(model, data, camera_id, positions, width, height)
     uv = uv[valid]
@@ -76,8 +80,8 @@ def render_sand_layer(
             for c in range(3):
                 np.add.at(color_sum[:, :, c], (pym, pxm), colors[m, c] * weight)
 
-    density_blur = cv2.GaussianBlur(density, (0, 0), 2.0)
-    color_blur = cv2.GaussianBlur(color_sum, (0, 0), 2.0)
+    density_blur = cv2.GaussianBlur(density, (0, 0), blur_sigma)
+    color_blur = cv2.GaussianBlur(color_sum, (0, 0), blur_sigma)
     denom = np.maximum(density_blur[:, :, None], 1.0e-5)
     sand = color_blur / denom
     noise = _noise(height, width)
@@ -86,8 +90,8 @@ def render_sand_layer(
     sand[:, :, 2] += 7.0 * noise
 
     density_norm = density_blur / max(1.0e-6, float(np.percentile(density_blur, 98.5)))
-    alpha = np.clip((density_norm - 0.04) / 0.60, 0.0, 0.92).astype(np.float32)
-    alpha = cv2.GaussianBlur(alpha, (0, 0), 1.2)
+    alpha = np.clip((density_norm - alpha_cutoff) / alpha_gain, 0.0, 0.92).astype(np.float32)
+    alpha = cv2.GaussianBlur(alpha, (0, 0), alpha_blur_sigma)
     return np.clip(sand, 0, 255).astype(np.uint8), alpha, depth_img
 
 
