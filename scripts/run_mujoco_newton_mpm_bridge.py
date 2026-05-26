@@ -35,7 +35,12 @@ if ROOT.as_posix() not in sys.path:
 if SRC.as_posix() not in sys.path:
     sys.path.insert(0, SRC.as_posix())
 
-from granular_mpm.composite_render import composite_sand, render_sand_density_layer, render_sand_layer
+from granular_mpm.composite_render import (
+    composite_sand,
+    render_sand_density_layer,
+    render_sand_heightfield_layer,
+    render_sand_layer,
+)
 from scripts.run_mujoco_3d_mpm_cosim import (
     MENAGERIE_PANDA,
     PANDA_XML,
@@ -49,6 +54,7 @@ from scripts.run_mujoco_3d_mpm_cosim import (
 OUT_DIR = ROOT / "outputs" / "mujoco_newton_mpm_bridge"
 SCENE_XML = OUT_DIR / "franka_newton_mpm_scene.xml"
 VIDEO_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge.mp4"
+ROBOT_VIDEO_PATH = OUT_DIR / "mujoco_robot_pass.mp4"
 SAND_VIDEO_PATH = OUT_DIR / "newton_mpm_sand_camera_layer.mp4"
 PREVIEW_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge_preview.png"
 SHEET_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge_sheet.png"
@@ -73,12 +79,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--particles-per-cell", type=float, default=3.0)
     parser.add_argument("--frames", type=int, default=72)
     parser.add_argument("--steps-per-frame", type=int, default=5)
-    parser.add_argument("--sand-render-mode", choices=["density", "point"], default="density")
+    parser.add_argument("--sand-render-mode", choices=["heightfield", "density", "point"], default="heightfield")
     parser.add_argument("--render-radius", type=int, default=5)
-    parser.add_argument("--render-blur", type=float, default=4.2)
+    parser.add_argument("--render-blur", type=float, default=2.4)
     parser.add_argument("--alpha-blur", type=float, default=1.6)
-    parser.add_argument("--alpha-cutoff", type=float, default=0.025)
-    parser.add_argument("--alpha-gain", type=float, default=0.52)
+    parser.add_argument("--alpha-cutoff", type=float, default=0.060)
+    parser.add_argument("--alpha-gain", type=float, default=0.48)
     return parser.parse_args()
 
 
@@ -507,6 +513,7 @@ def run() -> None:
 
     renderer = mujoco.Renderer(model, height=720, width=1280)
     frames: list[np.ndarray] = []
+    robot_frames: list[np.ndarray] = []
     sand_frames: list[np.ndarray] = []
     log_frames: list[int] = []
     log_force: list[np.ndarray] = []
@@ -539,7 +546,20 @@ def run() -> None:
         mujoco.mj_forward(model, data)
         particle_pos = bridge.positions()
         robot_rgb, robot_depth = render_rgb_depth(renderer, data, "newton_bridge_cam")
-        if args.sand_render_mode == "density":
+        if args.sand_render_mode == "heightfield":
+            sand_rgb, sand_alpha, sand_depth = render_sand_heightfield_layer(
+                model,
+                data,
+                camera_id,
+                particle_pos,
+                1280,
+                720,
+                density_blur_sigma=max(0.6, args.render_blur * 0.48),
+                height_blur_sigma=max(0.8, args.render_blur * 0.67),
+                alpha_cutoff=args.alpha_cutoff,
+                alpha_gain=args.alpha_gain,
+            )
+        elif args.sand_render_mode == "density":
             sand_rgb, sand_alpha, sand_depth = render_sand_density_layer(
                 model,
                 data,
@@ -578,6 +598,7 @@ def run() -> None:
             cv2.COLOR_BGR2RGB,
         )
         frames.append(frame)
+        robot_frames.append(robot_rgb)
         sand_frames.append(sand_only)
 
         if frame_id % 6 == 0 or frame_id == frames_n - 1:
@@ -595,6 +616,7 @@ def run() -> None:
 
     renderer.close()
     write_video(VIDEO_PATH, frames)
+    write_video(ROBOT_VIDEO_PATH, robot_frames)
     write_video(SAND_VIDEO_PATH, sand_frames)
     cv2.imwrite(PREVIEW_PATH.as_posix(), cv2.cvtColor(frames[-1], cv2.COLOR_RGB2BGR))
     write_sheet(SHEET_PATH, frames)
@@ -613,6 +635,7 @@ def run() -> None:
     )
     print(f"scene={SCENE_XML}")
     print(f"video={VIDEO_PATH}")
+    print(f"robot_video={ROBOT_VIDEO_PATH}")
     print(f"sand_video={SAND_VIDEO_PATH}")
     print(f"preview={PREVIEW_PATH}")
     print(f"sheet={SHEET_PATH}")

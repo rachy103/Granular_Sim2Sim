@@ -39,12 +39,13 @@ Run Newton's rigid-MPM two-way coupling example:
 Run the MuJoCo Franka to Newton MPM bridge:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0 --sand-render-mode heightfield --render-blur 2.4 --alpha-cutoff 0.060 --alpha-gain 0.48
 ```
 
-Use point-splat rendering only as a particle/debug view:
+Use screen-density rendering or point-splat rendering for comparison/debug:
 
 ```bash
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode density --voxel-size 0.032 --particles-per-cell 3.0
 /root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode point --voxel-size 0.032 --particles-per-cell 3.0 --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
 ```
 
@@ -64,6 +65,7 @@ outputs/newton_mpm_spike/mpm_granular_preview.mp4
 outputs/newton_mpm_twoway/mpm_twoway_coupling.usd
 outputs/newton_mpm_twoway/mpm_twoway_coupling_preview.mp4
 outputs/mujoco_newton_mpm_bridge/mujoco_franka_newton_mpm_bridge.mp4
+outputs/mujoco_newton_mpm_bridge/mujoco_robot_pass.mp4
 outputs/mujoco_newton_mpm_bridge/newton_mpm_sand_camera_layer.mp4
 outputs/mujoco_newton_mpm_bridge/newton_mpm_bridge_log.npz
 ```
@@ -112,7 +114,7 @@ pip install "newton[examples]>=1.2" "usd-core>=26.5"
 
 Newton is the preferred backend for the next phase because it already provides maintained 3D MPM granular examples, rigid-MPM two-way coupling, MuJoCo/Warp-adjacent infrastructure, and USD export for serious rendering/analysis pipelines.
 
-The MuJoCo-Newton bridge defaults to a camera-space density renderer. The older standalone `sand3d_density_render.mp4` can look better for sand alone because it is an orthographic top/side diagnostic that can directly shade a height field. The bridge render has the harder job of sharing a perspective camera and depth ordering with the robot. Point-splat mode is kept only for debugging material-point positions.
+The MuJoCo-Newton bridge writes separate robot, sand, and composite videos. Height-field mode reconstructs a world-space sand surface from Newton particles before camera projection; density mode renders a camera-space density layer; point-splat mode is kept only for debugging material-point positions. The older standalone `sand3d_density_render.mp4` can still look better for sand alone because it is an orthographic top/side diagnostic that can directly shade a height field. The bridge render has the harder job of sharing a perspective camera and depth ordering with the robot.
 
 Immediate next targets:
 

@@ -177,6 +177,123 @@ def render_sand_density_layer(
     return np.clip(sand, 0, 255).astype(np.uint8), alpha, depth_img
 
 
+def render_sand_heightfield_layer(
+    model: mujoco.MjModel,
+    data: mujoco.MjData,
+    camera_id: int,
+    positions: np.ndarray,
+    width: int,
+    height: int,
+    domain_x: tuple[float, float] = (0.205, 0.835),
+    domain_y: tuple[float, float] = (0.125, 0.435),
+    grid_shape: tuple[int, int] = (112, 56),
+    density_blur_sigma: float = 2.0,
+    height_blur_sigma: float = 2.8,
+    alpha_cutoff: float = 0.040,
+    alpha_gain: float = 0.55,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Render a separate world-space sand height field from MPM particles.
+
+    Unlike point and screen-density modes, this reconstructs a surface in the
+    tray's world XY frame and rasterizes that surface through the MuJoCo camera.
+    It is still a lightweight preview renderer, but it is much closer to the
+    standalone density diagnostic's visual model.
+    """
+
+    nx, ny = grid_shape
+    x_min, x_max = domain_x
+    y_min, y_max = domain_y
+    in_domain = (
+        (positions[:, 0] >= x_min)
+        & (positions[:, 0] <= x_max)
+        & (positions[:, 1] >= y_min)
+        & (positions[:, 1] <= y_max)
+    )
+    pts = positions[in_domain]
+    if pts.size == 0:
+        return (
+            np.zeros((height, width, 3), dtype=np.uint8),
+            np.zeros((height, width), dtype=np.float32),
+            np.full((height, width), np.inf, dtype=np.float32),
+        )
+
+    density = np.zeros((ny, nx), dtype=np.float32)
+    top = np.full((ny, nx), -np.inf, dtype=np.float32)
+    ix = np.clip(((pts[:, 0] - x_min) / (x_max - x_min) * (nx - 1)).astype(np.int32), 0, nx - 1)
+    iy = np.clip(((pts[:, 1] - y_min) / (y_max - y_min) * (ny - 1)).astype(np.int32), 0, ny - 1)
+    np.add.at(density, (iy, ix), 1.0)
+    np.maximum.at(top, (iy, ix), pts[:, 2].astype(np.float32))
+
+    valid_top = np.isfinite(top)
+    base_z = float(np.percentile(pts[:, 2], 8.0))
+    top = np.where(valid_top, top, base_z).astype(np.float32)
+    density = cv2.GaussianBlur(density, (0, 0), density_blur_sigma)
+    top = cv2.GaussianBlur(top, (0, 0), height_blur_sigma)
+    density_norm = density / max(1.0e-6, float(np.percentile(density, 98.0)))
+    density_norm = np.clip(density_norm, 0.0, 1.0)
+
+    gx = cv2.Sobel(top, cv2.CV_32F, 1, 0, ksize=5)
+    gy = cv2.Sobel(top, cv2.CV_32F, 0, 1, ksize=5)
+    relief = np.clip(0.98 - 2.8 * gx - 1.8 * gy, 0.68, 1.24)
+    z_norm = np.clip((top - float(np.percentile(top, 5.0))) / max(1.0e-6, float(np.ptp(top))), 0.0, 1.0)
+    noise = _noise(ny, nx)
+
+    color_grid = np.empty((ny, nx, 3), dtype=np.float32)
+    color_grid[:, :, 0] = (92.0 + 126.0 * density_norm + 38.0 * noise + 20.0 * z_norm) * relief
+    color_grid[:, :, 1] = (68.0 + 82.0 * density_norm + 24.0 * noise + 14.0 * z_norm) * relief
+    color_grid[:, :, 2] = (30.0 + 38.0 * density_norm + 12.0 * noise) * relief
+    alpha_grid = np.clip((density_norm - alpha_cutoff) / alpha_gain, 0.0, 0.96)
+    alpha_grid = cv2.GaussianBlur(alpha_grid.astype(np.float32), (0, 0), 0.9)
+
+    xs = np.linspace(x_min, x_max, nx, dtype=np.float32)
+    ys = np.linspace(y_min, y_max, ny, dtype=np.float32)
+    xx, yy = np.meshgrid(xs, ys)
+    verts = np.stack([xx, yy, top], axis=2).reshape(-1, 3)
+    uv, depth, valid = project_points(model, data, camera_id, verts, width, height)
+    uv_grid = uv.reshape(ny, nx, 2)
+    depth_grid = depth.reshape(ny, nx)
+    valid_grid = valid.reshape(ny, nx)
+
+    sand_rgb = np.zeros((height, width, 3), dtype=np.uint8)
+    sand_alpha = np.zeros((height, width), dtype=np.float32)
+    sand_depth = np.full((height, width), np.inf, dtype=np.float32)
+
+    cells: list[tuple[float, int, int]] = []
+    for j in range(ny - 1):
+        for i in range(nx - 1):
+            if float(np.mean(alpha_grid[j : j + 2, i : i + 2])) < 0.02:
+                continue
+            if not np.any(valid_grid[j : j + 2, i : i + 2]):
+                continue
+            z = float(np.nanmean(depth_grid[j : j + 2, i : i + 2]))
+            if not np.isfinite(z):
+                continue
+            cells.append((z, j, i))
+
+    cells.sort(reverse=True)
+    for z, j, i in cells:
+        poly = np.asarray(
+            [
+                uv_grid[j, i],
+                uv_grid[j, i + 1],
+                uv_grid[j + 1, i + 1],
+                uv_grid[j + 1, i],
+            ],
+            dtype=np.float32,
+        )
+        if np.all((poly[:, 0] < -8) | (poly[:, 0] > width + 8) | (poly[:, 1] < -8) | (poly[:, 1] > height + 8)):
+            continue
+        poly_i = np.round(poly).astype(np.int32)
+        color = np.clip(np.mean(color_grid[j : j + 2, i : i + 2], axis=(0, 1)), 0, 255).astype(np.uint8)
+        alpha = float(np.mean(alpha_grid[j : j + 2, i : i + 2]))
+        cv2.fillConvexPoly(sand_rgb, poly_i, color.tolist(), lineType=cv2.LINE_AA)
+        cv2.fillConvexPoly(sand_alpha, poly_i, alpha, lineType=cv2.LINE_AA)
+        cv2.fillConvexPoly(sand_depth, poly_i, z, lineType=cv2.LINE_AA)
+
+    sand_alpha = cv2.GaussianBlur(sand_alpha, (0, 0), 0.45)
+    return sand_rgb, np.clip(sand_alpha, 0.0, 0.96), sand_depth
+
+
 def composite_sand(
     robot_rgb: np.ndarray,
     robot_depth: np.ndarray,
