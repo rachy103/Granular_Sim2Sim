@@ -24,6 +24,12 @@ Run the density-style renderer, which avoids drawing MPM material points as bead
 /root/human2robot/.venvs/act_diverse/bin/python scripts/run_3d_density_render_demo.py
 ```
 
+Run the Newton MPM spike and produce a local preview from Newton's USD particles:
+
+```bash
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_newton_mpm_spike.py --example mpm_granular --num-frames 48 --voxel-size 0.05
+```
+
 Generated artifacts:
 
 ```text
@@ -35,6 +41,8 @@ outputs/3d_mpm_blade/final_state_and_wrench_log.npz
 outputs/3d_mpm_blade/resolved_config.json
 outputs/mujoco_3d_mpm_cosim/mujoco_franka_3d_mpm_interaction.mp4
 outputs/3d_mpm_density_render/sand3d_density_render.mp4
+outputs/newton_mpm_spike/mpm_granular.usd
+outputs/newton_mpm_spike/mpm_granular_preview.mp4
 ```
 
 The video contains top, side, and front projections of the same 3D material point state. The orange arrow and force plot show the reaction wrench computed from MPM contact impulses.
@@ -70,6 +78,12 @@ numpy
 ```
 
 For the standalone 3D MPM demo, only `warp-lang`, `numpy`, and `opencv-python` are required. MuJoCo is needed for the older Franka coupling prototype.
+
+Optional Newton spike dependencies:
+
+```bash
+pip install "newton[examples]>=1.2" "usd-core>=26.5"
+```
 
 ## Model Scope
 
