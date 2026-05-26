@@ -114,7 +114,7 @@ pip install "newton[examples]>=1.2" "usd-core>=26.5"
 
 Newton is the preferred backend for the next phase because it already provides maintained 3D MPM granular examples, rigid-MPM two-way coupling, MuJoCo/Warp-adjacent infrastructure, and USD export for serious rendering/analysis pipelines.
 
-The MuJoCo-Newton bridge writes separate robot, sand, and composite videos. Height-field mode reconstructs a world-space sand surface from Newton particles before camera projection; density mode renders a camera-space density layer; point-splat mode is kept only for debugging material-point positions. The older standalone `sand3d_density_render.mp4` can still look better for sand alone because it is an orthographic top/side diagnostic that can directly shade a height field. The bridge render has the harder job of sharing a perspective camera and depth ordering with the robot.
+The MuJoCo-Newton bridge writes separate robot, sand, and composite videos. Height-field mode reconstructs a world-space sand slab from Newton particles, extruding the surface down to a base plane so the rendered sand has visible volume instead of only a thin top sheet. Density mode renders a camera-space density layer; point-splat mode is kept only for debugging material-point positions. The older standalone `sand3d_density_render.mp4` can still look better for sand alone because it is an orthographic top/side diagnostic that can directly shade a height field. The bridge render has the harder job of sharing a perspective camera and depth ordering with the robot.
 
 Immediate next targets:
 

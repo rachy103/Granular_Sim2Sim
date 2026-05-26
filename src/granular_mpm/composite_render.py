@@ -191,13 +191,14 @@ def render_sand_heightfield_layer(
     height_blur_sigma: float = 2.8,
     alpha_cutoff: float = 0.040,
     alpha_gain: float = 0.55,
+    solid_base_z: float = 0.030,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Render a separate world-space sand height field from MPM particles.
 
-    Unlike point and screen-density modes, this reconstructs a surface in the
-    tray's world XY frame and rasterizes that surface through the MuJoCo camera.
-    It is still a lightweight preview renderer, but it is much closer to the
-    standalone density diagnostic's visual model.
+    Unlike point and screen-density modes, this reconstructs a slab in the
+    tray's world XY frame, then rasterizes its top and side walls through the
+    MuJoCo camera. It is still a lightweight preview renderer, but it is much
+    closer to the standalone density diagnostic's visual model.
     """
 
     nx, ny = grid_shape
@@ -229,6 +230,7 @@ def render_sand_heightfield_layer(
     top = np.where(valid_top, top, base_z).astype(np.float32)
     density = cv2.GaussianBlur(density, (0, 0), density_blur_sigma)
     top = cv2.GaussianBlur(top, (0, 0), height_blur_sigma)
+    top = np.maximum(top, solid_base_z + 0.006)
     density_norm = density / max(1.0e-6, float(np.percentile(density, 98.0)))
     density_norm = np.clip(density_norm, 0.0, 1.0)
 
@@ -248,47 +250,148 @@ def render_sand_heightfield_layer(
     xs = np.linspace(x_min, x_max, nx, dtype=np.float32)
     ys = np.linspace(y_min, y_max, ny, dtype=np.float32)
     xx, yy = np.meshgrid(xs, ys)
-    verts = np.stack([xx, yy, top], axis=2).reshape(-1, 3)
-    uv, depth, valid = project_points(model, data, camera_id, verts, width, height)
-    uv_grid = uv.reshape(ny, nx, 2)
-    depth_grid = depth.reshape(ny, nx)
-    valid_grid = valid.reshape(ny, nx)
+    top_verts = np.stack([xx, yy, top], axis=2)
+    bottom_verts = top_verts.copy()
+    bottom_verts[:, :, 2] = solid_base_z
+
+    uv_top, depth_top, valid_top_proj = project_points(model, data, camera_id, top_verts.reshape(-1, 3), width, height)
+    uv_bottom, depth_bottom, valid_bottom_proj = project_points(
+        model, data, camera_id, bottom_verts.reshape(-1, 3), width, height
+    )
+    uv_top = uv_top.reshape(ny, nx, 2)
+    uv_bottom = uv_bottom.reshape(ny, nx, 2)
+    depth_top = depth_top.reshape(ny, nx)
+    depth_bottom = depth_bottom.reshape(ny, nx)
+    valid_top_proj = valid_top_proj.reshape(ny, nx)
+    valid_bottom_proj = valid_bottom_proj.reshape(ny, nx)
 
     sand_rgb = np.zeros((height, width, 3), dtype=np.uint8)
     sand_alpha = np.zeros((height, width), dtype=np.float32)
     sand_depth = np.full((height, width), np.inf, dtype=np.float32)
 
-    cells: list[tuple[float, int, int]] = []
+    def add_face(
+        faces: list[tuple[float, np.ndarray, np.ndarray, float]],
+        pts2d: np.ndarray,
+        depths: np.ndarray,
+        valids: np.ndarray,
+        color: np.ndarray,
+        alpha: float,
+    ) -> None:
+        if alpha < 0.015 or not np.any(valids):
+            return
+        z = float(np.nanmean(depths))
+        if not np.isfinite(z):
+            return
+        if np.all(
+            (pts2d[:, 0] < -8)
+            | (pts2d[:, 0] > width + 8)
+            | (pts2d[:, 1] < -8)
+            | (pts2d[:, 1] > height + 8)
+        ):
+            return
+        faces.append((z, pts2d, color, alpha))
+
+    top_faces: list[tuple[float, np.ndarray, np.ndarray, float]] = []
+    side_faces: list[tuple[float, np.ndarray, np.ndarray, float]] = []
     for j in range(ny - 1):
         for i in range(nx - 1):
-            if float(np.mean(alpha_grid[j : j + 2, i : i + 2])) < 0.02:
+            alpha = float(np.mean(alpha_grid[j : j + 2, i : i + 2]))
+            if alpha < 0.02:
                 continue
-            if not np.any(valid_grid[j : j + 2, i : i + 2]):
-                continue
-            z = float(np.nanmean(depth_grid[j : j + 2, i : i + 2]))
-            if not np.isfinite(z):
-                continue
-            cells.append((z, j, i))
 
-    cells.sort(reverse=True)
-    for z, j, i in cells:
-        poly = np.asarray(
-            [
-                uv_grid[j, i],
-                uv_grid[j, i + 1],
-                uv_grid[j + 1, i + 1],
-                uv_grid[j + 1, i],
-            ],
-            dtype=np.float32,
-        )
-        if np.all((poly[:, 0] < -8) | (poly[:, 0] > width + 8) | (poly[:, 1] < -8) | (poly[:, 1] > height + 8)):
-            continue
-        poly_i = np.round(poly).astype(np.int32)
-        color = np.clip(np.mean(color_grid[j : j + 2, i : i + 2], axis=(0, 1)), 0, 255).astype(np.uint8)
-        alpha = float(np.mean(alpha_grid[j : j + 2, i : i + 2]))
-        cv2.fillConvexPoly(sand_rgb, poly_i, color.tolist(), lineType=cv2.LINE_AA)
-        cv2.fillConvexPoly(sand_alpha, poly_i, alpha, lineType=cv2.LINE_AA)
-        cv2.fillConvexPoly(sand_depth, poly_i, z, lineType=cv2.LINE_AA)
+            poly = np.asarray(
+                [
+                    uv_top[j, i],
+                    uv_top[j, i + 1],
+                    uv_top[j + 1, i + 1],
+                    uv_top[j + 1, i],
+                ],
+                dtype=np.float32,
+            )
+            color = np.clip(np.mean(color_grid[j : j + 2, i : i + 2], axis=(0, 1)), 0, 255).astype(np.uint8)
+            add_face(
+                top_faces,
+                poly,
+                depth_top[j : j + 2, i : i + 2].reshape(-1),
+                valid_top_proj[j : j + 2, i : i + 2].reshape(-1),
+                color,
+                alpha,
+            )
+
+    def add_side_strip(
+        top_line: np.ndarray,
+        bottom_line: np.ndarray,
+        top_depth_line: np.ndarray,
+        bottom_depth_line: np.ndarray,
+        top_valid_line: np.ndarray,
+        bottom_valid_line: np.ndarray,
+        color_samples: np.ndarray,
+        alpha_samples: np.ndarray,
+    ) -> None:
+        alpha = float(np.mean(alpha_samples))
+        if alpha < 0.02:
+            return
+        poly = np.concatenate([top_line, bottom_line[::-1]], axis=0).astype(np.float32)
+        depths = np.concatenate([top_depth_line, bottom_depth_line[::-1]], axis=0)
+        valids = np.concatenate([top_valid_line, bottom_valid_line[::-1]], axis=0)
+        side_color = np.clip(
+            np.mean(color_samples.reshape(-1, 3), axis=0) * np.array([0.60, 0.56, 0.48], dtype=np.float32),
+            0,
+            255,
+        ).astype(np.uint8)
+        add_face(side_faces, poly, depths, valids, side_color, min(0.94, alpha * 1.12))
+
+    add_side_strip(
+        uv_top[0, :],
+        uv_bottom[0, :],
+        depth_top[0, :],
+        depth_bottom[0, :],
+        valid_top_proj[0, :],
+        valid_bottom_proj[0, :],
+        color_grid[:2, :, :],
+        alpha_grid[:2, :],
+    )
+    add_side_strip(
+        uv_top[-1, :],
+        uv_bottom[-1, :],
+        depth_top[-1, :],
+        depth_bottom[-1, :],
+        valid_top_proj[-1, :],
+        valid_bottom_proj[-1, :],
+        color_grid[-2:, :, :],
+        alpha_grid[-2:, :],
+    )
+    add_side_strip(
+        uv_top[:, 0],
+        uv_bottom[:, 0],
+        depth_top[:, 0],
+        depth_bottom[:, 0],
+        valid_top_proj[:, 0],
+        valid_bottom_proj[:, 0],
+        color_grid[:, :2, :],
+        alpha_grid[:, :2],
+    )
+    add_side_strip(
+        uv_top[:, -1],
+        uv_bottom[:, -1],
+        depth_top[:, -1],
+        depth_bottom[:, -1],
+        valid_top_proj[:, -1],
+        valid_bottom_proj[:, -1],
+        color_grid[:, -2:, :],
+        alpha_grid[:, -2:],
+    )
+
+    def draw_faces(faces: list[tuple[float, np.ndarray, np.ndarray, float]]) -> None:
+        faces.sort(key=lambda item: item[0], reverse=True)
+        for z, poly, color, alpha in faces:
+            poly_i = np.round(poly).astype(np.int32)
+            cv2.fillPoly(sand_rgb, [poly_i], color.tolist(), lineType=cv2.LINE_AA)
+            cv2.fillPoly(sand_alpha, [poly_i], alpha, lineType=cv2.LINE_AA)
+            cv2.fillPoly(sand_depth, [poly_i], z, lineType=cv2.LINE_AA)
+
+    draw_faces(side_faces)
+    draw_faces(top_faces)
 
     sand_alpha = cv2.GaussianBlur(sand_alpha, (0, 0), 0.45)
     return sand_rgb, np.clip(sand_alpha, 0.0, 0.96), sand_depth
