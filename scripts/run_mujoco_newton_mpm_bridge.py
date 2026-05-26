@@ -15,6 +15,7 @@ granular state behind MuJoCo visual spheres.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -59,6 +60,7 @@ SAND_VIDEO_PATH = OUT_DIR / "newton_mpm_sand_camera_layer.mp4"
 PREVIEW_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge_preview.png"
 SHEET_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge_sheet.png"
 LOG_PATH = OUT_DIR / "newton_mpm_bridge_log.npz"
+DEFAULT_CONFIG_PATH = ROOT / "configs" / "newton_bridge_heightfield.json"
 
 
 @wp.kernel
@@ -73,18 +75,56 @@ def sum_collider_impulses(
         wp.atomic_add(impulse_sum, 0, collider_impulses[i])
 
 
+def _bridge_defaults(config_path: Path | None) -> dict[str, float | int | str]:
+    defaults: dict[str, float | int | str] = {
+        "device": "cuda:0",
+        "voxel_size": 0.045,
+        "particles_per_cell": 3.0,
+        "frames": 72,
+        "steps_per_frame": 5,
+        "sand_render_mode": "heightfield",
+        "render_radius": 5,
+        "render_blur": 2.4,
+        "alpha_blur": 1.6,
+        "alpha_cutoff": 0.060,
+        "alpha_gain": 0.48,
+        "force_feedback_scale": 0.018,
+    }
+    if config_path is None:
+        return defaults
+
+    with config_path.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+    for key, value in raw.items():
+        normalized = key.replace("-", "_")
+        if normalized in defaults:
+            defaults[normalized] = value
+    return defaults
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--voxel-size", type=float, default=0.045)
-    parser.add_argument("--particles-per-cell", type=float, default=3.0)
-    parser.add_argument("--frames", type=int, default=72)
-    parser.add_argument("--steps-per-frame", type=int, default=5)
-    parser.add_argument("--sand-render-mode", choices=["heightfield", "density", "point"], default="heightfield")
-    parser.add_argument("--render-radius", type=int, default=5)
-    parser.add_argument("--render-blur", type=float, default=2.4)
-    parser.add_argument("--alpha-blur", type=float, default=1.6)
-    parser.add_argument("--alpha-cutoff", type=float, default=0.060)
-    parser.add_argument("--alpha-gain", type=float, default=0.48)
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH if DEFAULT_CONFIG_PATH.exists() else None)
+    pre_args, _ = pre_parser.parse_known_args()
+    defaults = _bridge_defaults(pre_args.config)
+
+    parser = argparse.ArgumentParser(parents=[pre_parser])
+    parser.add_argument("--device", default=defaults["device"])
+    parser.add_argument("--voxel-size", type=float, default=defaults["voxel_size"])
+    parser.add_argument("--particles-per-cell", type=float, default=defaults["particles_per_cell"])
+    parser.add_argument("--frames", type=int, default=defaults["frames"])
+    parser.add_argument("--steps-per-frame", type=int, default=defaults["steps_per_frame"])
+    parser.add_argument(
+        "--sand-render-mode",
+        choices=["heightfield", "density", "point"],
+        default=defaults["sand_render_mode"],
+    )
+    parser.add_argument("--render-radius", type=int, default=defaults["render_radius"])
+    parser.add_argument("--render-blur", type=float, default=defaults["render_blur"])
+    parser.add_argument("--alpha-blur", type=float, default=defaults["alpha_blur"])
+    parser.add_argument("--alpha-cutoff", type=float, default=defaults["alpha_cutoff"])
+    parser.add_argument("--alpha-gain", type=float, default=defaults["alpha_gain"])
+    parser.add_argument("--force-feedback-scale", type=float, default=defaults["force_feedback_scale"])
     return parser.parse_args()
 
 
@@ -497,7 +537,7 @@ def run() -> None:
     mujoco.mj_forward(model, data)
 
     bridge = NewtonSandBridge(
-        device="cuda:0",
+        device=args.device,
         voxel_size=args.voxel_size,
         particles_per_cell=args.particles_per_cell,
     )
@@ -505,7 +545,7 @@ def run() -> None:
     frames_n = args.frames
     steps_per_frame = args.steps_per_frame
     total_time = frames_n * steps_per_frame * mj_dt
-    force_feedback_scale = 0.018
+    force_feedback_scale = args.force_feedback_scale
     print(
         f"MuJoCo dt={mj_dt:.4f} Newton particles={bridge.particle_count} "
         f"frames={frames_n} steps/frame={steps_per_frame}"
@@ -628,10 +668,12 @@ def run() -> None:
         particle_pos=np.asarray(log_particle_pos, dtype=object),
         voxel_size=np.asarray(bridge.voxel_size, dtype=np.float32),
         particles_per_cell=np.asarray(bridge.particles_per_cell, dtype=np.float32),
+        device=np.asarray(args.device),
         sand_render_mode=np.asarray(args.sand_render_mode),
         render_radius=np.asarray(args.render_radius, dtype=np.int32),
         render_blur=np.asarray(args.render_blur, dtype=np.float32),
         alpha_blur=np.asarray(args.alpha_blur, dtype=np.float32),
+        force_feedback_scale=np.asarray(args.force_feedback_scale, dtype=np.float32),
     )
     print(f"scene={SCENE_XML}")
     print(f"video={VIDEO_PATH}")

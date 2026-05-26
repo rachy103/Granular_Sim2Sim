@@ -5,7 +5,7 @@ description = "Warp MLS-MPM sandbox for physically inspectable granular robot in
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.24",
-  "opencv-python>=4.8",
+  "opencv-python-headless>=4.8",
   "warp-lang>=1.13",
 ]
 

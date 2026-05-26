@@ -19,14 +19,14 @@ from granular_mpm.density_render import render_density_frame, write_density_shee
 from scripts.run_3d_blade_demo import blade_state
 
 
-def run(out_dir: Path, frames_n: int, substeps: int) -> None:
+def run(out_dir: Path, frames_n: int, substeps: int, device: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-    solver = SandMPM3D(SandMPM3DConfig(dt=8.0e-4, seed=7), device="cuda:0")
+    solver = SandMPM3D(SandMPM3DConfig(dt=8.0e-4, seed=7), device=device)
     sim_t = 0.0
     frames: list[np.ndarray] = []
     force_history: list[float] = []
     force_scale = 0.0012
-    print(f"density render frames={frames_n} particles={solver.n_particles}")
+    print(f"density render device={device} frames={frames_n} particles={solver.n_particles}")
 
     last_tool = blade_state(0.0, solver.config.dt)
     for frame_id in range(frames_n):
@@ -62,8 +62,9 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=ROOT / "outputs" / "3d_mpm_density_render")
     parser.add_argument("--frames", type=int, default=60)
     parser.add_argument("--substeps", type=int, default=34)
+    parser.add_argument("--device", default="cuda:0")
     args = parser.parse_args()
-    run(args.out, args.frames, args.substeps)
+    run(args.out, args.frames, args.substeps, args.device)
 
 
 if __name__ == "__main__":

@@ -30,6 +30,19 @@ If EGL rendering is available, the MuJoCo scripts default to headless rendering
 through `MUJOCO_GL=egl`. On a CPU-only machine, start with the standalone density
 demo before running the Newton bridge.
 
+Fast checks and reproducible demo runs are available through `make`:
+
+```bash
+make smoke          # pytest plus a tiny density-render run
+make smoke-bridge   # tiny MuJoCo-Newton bridge run
+make demo           # regenerate the publishable demo videos and artifact zip
+```
+
+`make smoke` uses Warp CPU by default. For GPU smoke runs, use
+`GRANULAR_SMOKE_DEVICE=cuda:0 make smoke`.
+
+See `docs/reproducibility.md` for the full source/asset/artifact contract.
+
 ## Artifact Policy
 
 Large files are treated as reproducible artifacts, not source. The repo does not
@@ -90,14 +103,14 @@ python scripts/run_newton_mpm_spike.py --example mpm_twoway_coupling --output-di
 Run the MuJoCo Franka to Newton MPM bridge:
 
 ```bash
-python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0 --sand-render-mode heightfield --render-blur 2.4 --alpha-cutoff 0.060 --alpha-gain 0.48
+python scripts/run_mujoco_newton_mpm_bridge.py --config configs/newton_bridge_heightfield.json
 ```
 
 Use screen-density rendering or point-splat rendering for comparison/debug:
 
 ```bash
-python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode density --voxel-size 0.032 --particles-per-cell 3.0
-python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode point --voxel-size 0.032 --particles-per-cell 3.0 --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
+python scripts/run_mujoco_newton_mpm_bridge.py --config configs/newton_bridge_heightfield.json --sand-render-mode density
+python scripts/run_mujoco_newton_mpm_bridge.py --config configs/newton_bridge_heightfield.json --sand-render-mode point --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
 ```
 
 Generated artifacts:
@@ -131,6 +144,7 @@ docs/                            Research basis and modeling notes
 scripts/                         Entry points for demos and experiments
 src/granular_mpm/                MPM kernels, solver wrappers, visualization
 outputs/                         Generated videos, logs, and snapshots
+dist/                            Packaged generated artifact bundles
 ```
 
 Legacy prototypes are kept at the repository root:
@@ -149,11 +163,11 @@ The tested environment is the WSL distro `Ubuntu-Human2Robot` with:
 warp-lang 1.13.0
 mujoco 3.8.1
 mujoco-warp 3.8.1
-opencv-python
+opencv-python-headless
 numpy
 ```
 
-For the standalone 3D MPM demo, only `warp-lang`, `numpy`, and `opencv-python` are required. MuJoCo is needed for the older Franka coupling prototype.
+For the standalone 3D MPM demo, only `warp-lang`, `numpy`, and `opencv-python-headless` are required. MuJoCo is needed for the older Franka coupling prototype.
 
 Optional Newton spike dependencies:
 
@@ -170,11 +184,11 @@ The MuJoCo-Newton bridge writes separate robot, sand, and composite videos. Heig
 Immediate next targets:
 
 ```text
-wrap Newton MPM runs in project-native configs
-replace the generic Newton collider with a controllable intrusion tool
+replace the bridge's preview renderer with a proper USD/Blender/Omniverse render path
+turn the kinematic intrusion sequence into configurable trajectory primitives
 log particle state, tool pose, and reaction-like contact signals per frame
 connect the tool trajectory to a Franka/MJCF or Newton robot controller
-render camera RGB/depth from USD or an external renderer while keeping particle logs
+validate intrusion and drag force curves against material parameters
 ```
 
 ## Model Scope

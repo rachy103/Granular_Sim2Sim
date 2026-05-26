@@ -1,0 +1,14 @@
+{
+  "device": "cuda:0",
+  "voxel_size": 0.032,
+  "particles_per_cell": 3.0,
+  "frames": 72,
+  "steps_per_frame": 5,
+  "sand_render_mode": "heightfield",
+  "render_radius": 5,
+  "render_blur": 2.4,
+  "alpha_blur": 1.6,
+  "alpha_cutoff": 0.06,
+  "alpha_gain": 0.48,
+  "force_feedback_scale": 0.018
+}
