@@ -39,13 +39,13 @@ Run Newton's rigid-MPM two-way coupling example:
 Run the MuJoCo Franka to Newton MPM bridge:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0
 ```
 
-Use finer Newton particles and a smaller preview splat:
+Use point-splat rendering only as a particle/debug view:
 
 ```bash
-/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0 --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
+/root/human2robot/.venvs/act_diverse/bin/python scripts/run_mujoco_newton_mpm_bridge.py --sand-render-mode point --voxel-size 0.032 --particles-per-cell 3.0 --render-radius 2 --render-blur 0.85 --alpha-blur 0.45
 ```
 
 Generated artifacts:
@@ -111,6 +111,8 @@ pip install "newton[examples]>=1.2" "usd-core>=26.5"
 ## Newton Direction
 
 Newton is the preferred backend for the next phase because it already provides maintained 3D MPM granular examples, rigid-MPM two-way coupling, MuJoCo/Warp-adjacent infrastructure, and USD export for serious rendering/analysis pipelines.
+
+The MuJoCo-Newton bridge defaults to a camera-space density renderer. The older standalone `sand3d_density_render.mp4` can look better for sand alone because it is an orthographic top/side diagnostic that can directly shade a height field. The bridge render has the harder job of sharing a perspective camera and depth ordering with the robot. Point-splat mode is kept only for debugging material-point positions.
 
 Immediate next targets:
 

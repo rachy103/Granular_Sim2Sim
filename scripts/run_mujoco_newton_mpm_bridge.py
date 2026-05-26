@@ -35,7 +35,7 @@ if ROOT.as_posix() not in sys.path:
 if SRC.as_posix() not in sys.path:
     sys.path.insert(0, SRC.as_posix())
 
-from granular_mpm.composite_render import composite_sand, render_sand_layer
+from granular_mpm.composite_render import composite_sand, render_sand_density_layer, render_sand_layer
 from scripts.run_mujoco_3d_mpm_cosim import (
     MENAGERIE_PANDA,
     PANDA_XML,
@@ -73,11 +73,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--particles-per-cell", type=float, default=3.0)
     parser.add_argument("--frames", type=int, default=72)
     parser.add_argument("--steps-per-frame", type=int, default=5)
+    parser.add_argument("--sand-render-mode", choices=["density", "point"], default="density")
     parser.add_argument("--render-radius", type=int, default=5)
-    parser.add_argument("--render-blur", type=float, default=2.0)
-    parser.add_argument("--alpha-blur", type=float, default=1.2)
-    parser.add_argument("--alpha-cutoff", type=float, default=0.04)
-    parser.add_argument("--alpha-gain", type=float, default=0.60)
+    parser.add_argument("--render-blur", type=float, default=4.2)
+    parser.add_argument("--alpha-blur", type=float, default=1.6)
+    parser.add_argument("--alpha-cutoff", type=float, default=0.025)
+    parser.add_argument("--alpha-gain", type=float, default=0.52)
     return parser.parse_args()
 
 
@@ -538,19 +539,33 @@ def run() -> None:
         mujoco.mj_forward(model, data)
         particle_pos = bridge.positions()
         robot_rgb, robot_depth = render_rgb_depth(renderer, data, "newton_bridge_cam")
-        sand_rgb, sand_alpha, sand_depth = render_sand_layer(
-            model,
-            data,
-            camera_id,
-            particle_pos,
-            1280,
-            720,
-            radius=args.render_radius,
-            blur_sigma=args.render_blur,
-            alpha_blur_sigma=args.alpha_blur,
-            alpha_cutoff=args.alpha_cutoff,
-            alpha_gain=args.alpha_gain,
-        )
+        if args.sand_render_mode == "density":
+            sand_rgb, sand_alpha, sand_depth = render_sand_density_layer(
+                model,
+                data,
+                camera_id,
+                particle_pos,
+                1280,
+                720,
+                blur_sigma=args.render_blur,
+                alpha_blur_sigma=args.alpha_blur,
+                alpha_cutoff=args.alpha_cutoff,
+                alpha_gain=args.alpha_gain,
+            )
+        else:
+            sand_rgb, sand_alpha, sand_depth = render_sand_layer(
+                model,
+                data,
+                camera_id,
+                particle_pos,
+                1280,
+                720,
+                radius=args.render_radius,
+                blur_sigma=args.render_blur,
+                alpha_blur_sigma=args.alpha_blur,
+                alpha_cutoff=args.alpha_cutoff,
+                alpha_gain=args.alpha_gain,
+            )
         composite = composite_sand(robot_rgb, robot_depth, sand_rgb, sand_alpha, sand_depth)
         desired = planned_bridge_ctrl(waypoints, float(data.time), total_time)
         qerr = float(np.linalg.norm(desired[:7] - data.qpos[:7]))
@@ -591,6 +606,7 @@ def run() -> None:
         particle_pos=np.asarray(log_particle_pos, dtype=object),
         voxel_size=np.asarray(bridge.voxel_size, dtype=np.float32),
         particles_per_cell=np.asarray(bridge.particles_per_cell, dtype=np.float32),
+        sand_render_mode=np.asarray(args.sand_render_mode),
         render_radius=np.asarray(args.render_radius, dtype=np.int32),
         render_blur=np.asarray(args.render_blur, dtype=np.float32),
         alpha_blur=np.asarray(args.alpha_blur, dtype=np.float32),

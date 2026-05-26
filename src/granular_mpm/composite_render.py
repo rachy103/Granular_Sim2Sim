@@ -95,6 +95,88 @@ def render_sand_layer(
     return np.clip(sand, 0, 255).astype(np.uint8), alpha, depth_img
 
 
+def render_sand_density_layer(
+    model: mujoco.MjModel,
+    data: mujoco.MjData,
+    camera_id: int,
+    positions: np.ndarray,
+    width: int,
+    height: int,
+    blur_sigma: float = 4.2,
+    alpha_blur_sigma: float = 1.6,
+    alpha_cutoff: float = 0.025,
+    alpha_gain: float = 0.52,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Render MPM material points as a continuous camera-space sand layer.
+
+    This is a preview renderer, not a physically based renderer. It intentionally
+    suppresses individual material-point glyphs and favors density/height relief,
+    matching the standalone density diagnostic more closely.
+    """
+
+    uv, depth, valid = project_points(model, data, camera_id, positions, width, height)
+    uv = uv[valid]
+    depth = depth[valid]
+    pts = positions[valid]
+    if pts.size == 0:
+        return (
+            np.zeros((height, width, 3), dtype=np.uint8),
+            np.zeros((height, width), dtype=np.float32),
+            np.full((height, width), np.inf, dtype=np.float32),
+        )
+
+    density = np.zeros((height, width), dtype=np.float32)
+    depth_sum = np.zeros((height, width), dtype=np.float32)
+    height_sum = np.zeros((height, width), dtype=np.float32)
+
+    x0 = np.floor(uv[:, 0]).astype(np.int32)
+    y0 = np.floor(uv[:, 1]).astype(np.int32)
+    fx = uv[:, 0] - x0
+    fy = uv[:, 1] - y0
+
+    for ox, wx in ((0, 1.0 - fx), (1, fx)):
+        for oy, wy in ((0, 1.0 - fy), (1, fy)):
+            px = x0 + ox
+            py = y0 + oy
+            w = (wx * wy).astype(np.float32)
+            m = (px >= 0) & (px < width) & (py >= 0) & (py < height) & (w > 1.0e-5)
+            if not np.any(m):
+                continue
+            pxm = px[m]
+            pym = py[m]
+            wm = w[m]
+            np.add.at(density, (pym, pxm), wm)
+            np.add.at(depth_sum, (pym, pxm), depth[m].astype(np.float32) * wm)
+            np.add.at(height_sum, (pym, pxm), pts[m, 2].astype(np.float32) * wm)
+
+    density_blur = cv2.GaussianBlur(density, (0, 0), blur_sigma)
+    depth_blur = cv2.GaussianBlur(depth_sum, (0, 0), blur_sigma)
+    height_blur = cv2.GaussianBlur(height_sum, (0, 0), blur_sigma)
+    denom = np.maximum(density_blur, 1.0e-6)
+    depth_img = depth_blur / denom
+    depth_img[density_blur <= 1.0e-5] = np.inf
+    height_img = height_blur / denom
+
+    density_norm = density_blur / max(1.0e-6, float(np.percentile(density_blur, 98.8)))
+    density_norm = np.clip(density_norm, 0.0, 1.0)
+    hnorm = np.clip((height_img - float(np.percentile(pts[:, 2], 2.0))) / max(1.0e-6, float(np.ptp(pts[:, 2]))), 0.0, 1.0)
+
+    gx = cv2.Sobel(height_img.astype(np.float32), cv2.CV_32F, 1, 0, ksize=5)
+    gy = cv2.Sobel(height_img.astype(np.float32), cv2.CV_32F, 0, 1, ksize=5)
+    relief = np.clip(0.96 - 2.4 * gx - 1.6 * gy, 0.70, 1.22)
+    noise = _noise(height, width)
+
+    sand = np.empty((height, width, 3), dtype=np.float32)
+    sand[:, :, 0] = (96.0 + 116.0 * density_norm + 36.0 * noise + 18.0 * hnorm) * relief
+    sand[:, :, 1] = (70.0 + 78.0 * density_norm + 23.0 * noise + 12.0 * hnorm) * relief
+    sand[:, :, 2] = (31.0 + 38.0 * density_norm + 12.0 * noise) * relief
+
+    alpha = np.clip((density_norm - alpha_cutoff) / alpha_gain, 0.0, 0.94).astype(np.float32)
+    alpha = cv2.GaussianBlur(alpha, (0, 0), alpha_blur_sigma)
+    sand[alpha < 0.01] = 0.0
+    return np.clip(sand, 0, 255).astype(np.uint8), alpha, depth_img
+
+
 def composite_sand(
     robot_rgb: np.ndarray,
     robot_depth: np.ndarray,
