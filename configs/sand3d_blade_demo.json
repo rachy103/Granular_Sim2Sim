@@ -1,0 +1,21 @@
+{
+  "device": "cuda:0",
+  "output_dir": "outputs/3d_mpm_blade",
+  "frames": 60,
+  "fps": 30,
+  "substeps_per_frame": 34,
+  "display_force_scale": 0.0012,
+  "mpm": {
+    "dt": 0.0008,
+    "young": 2200.0,
+    "poisson": 0.24,
+    "dp_alpha": 0.42,
+    "gravity": -1.35,
+    "tool_mu": 0.44,
+    "max_grid_speed": 1.3,
+    "damping": 0.998,
+    "contact_band_cells": 1.35,
+    "penetration_stiffness": 0.045,
+    "seed": 7
+  }
+}

@@ -1,0 +1,20 @@
+[project]
+name = "granular-mpm-research"
+version = "0.1.0"
+description = "Warp MLS-MPM sandbox for physically inspectable granular robot interaction."
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "opencv-python>=4.8",
+  "warp-lang>=1.13",
+]
+
+[project.optional-dependencies]
+mujoco = [
+  "mujoco>=3.8",
+  "mujoco-warp>=3.8",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
