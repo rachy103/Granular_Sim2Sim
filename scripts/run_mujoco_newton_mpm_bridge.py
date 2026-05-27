@@ -18,6 +18,7 @@ import argparse
 import json
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 os.environ.setdefault("MUJOCO_GL", "egl")
@@ -53,14 +54,32 @@ from scripts.run_mujoco_3d_mpm_cosim import (
 
 
 OUT_DIR = ROOT / "outputs" / "mujoco_newton_mpm_bridge"
-SCENE_XML = OUT_DIR / "franka_newton_mpm_scene.xml"
-VIDEO_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge.mp4"
-ROBOT_VIDEO_PATH = OUT_DIR / "mujoco_robot_pass.mp4"
-SAND_VIDEO_PATH = OUT_DIR / "newton_mpm_sand_camera_layer.mp4"
-PREVIEW_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge_preview.png"
-SHEET_PATH = OUT_DIR / "mujoco_franka_newton_mpm_bridge_sheet.png"
-LOG_PATH = OUT_DIR / "newton_mpm_bridge_log.npz"
 DEFAULT_CONFIG_PATH = ROOT / "configs" / "newton_bridge_heightfield.json"
+
+
+@dataclass(frozen=True)
+class BridgePaths:
+    out_dir: Path
+    scene_xml: Path
+    video: Path
+    robot_video: Path
+    sand_video: Path
+    preview: Path
+    sheet: Path
+    log: Path
+
+
+def bridge_paths(out_dir: Path) -> BridgePaths:
+    return BridgePaths(
+        out_dir=out_dir,
+        scene_xml=out_dir / "franka_newton_mpm_scene.xml",
+        video=out_dir / "mujoco_franka_newton_mpm_bridge.mp4",
+        robot_video=out_dir / "mujoco_robot_pass.mp4",
+        sand_video=out_dir / "newton_mpm_sand_camera_layer.mp4",
+        preview=out_dir / "mujoco_franka_newton_mpm_bridge_preview.png",
+        sheet=out_dir / "mujoco_franka_newton_mpm_bridge_sheet.png",
+        log=out_dir / "newton_mpm_bridge_log.npz",
+    )
 
 
 @wp.kernel
@@ -78,8 +97,16 @@ def sum_collider_impulses(
 def _bridge_defaults(config_path: Path | None) -> dict[str, float | int | str]:
     defaults: dict[str, float | int | str] = {
         "device": "cuda:0",
+        "output_dir": "outputs/mujoco_newton_mpm_bridge",
         "voxel_size": 0.045,
         "particles_per_cell": 3.0,
+        "sand_density": 1550.0,
+        "sand_friction": 0.74,
+        "sand_young_modulus": 1.0e6,
+        "sand_poisson": 0.28,
+        "sand_yield_pressure": 1.0e6,
+        "sand_damping": 0.02,
+        "sand_jitter_scale": 1.8,
         "frames": 72,
         "steps_per_frame": 5,
         "sand_render_mode": "heightfield",
@@ -110,8 +137,16 @@ def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(parents=[pre_parser])
     parser.add_argument("--device", default=defaults["device"])
+    parser.add_argument("--output-dir", type=Path, default=ROOT / str(defaults["output_dir"]))
     parser.add_argument("--voxel-size", type=float, default=defaults["voxel_size"])
     parser.add_argument("--particles-per-cell", type=float, default=defaults["particles_per_cell"])
+    parser.add_argument("--sand-density", type=float, default=defaults["sand_density"])
+    parser.add_argument("--sand-friction", type=float, default=defaults["sand_friction"])
+    parser.add_argument("--sand-young-modulus", type=float, default=defaults["sand_young_modulus"])
+    parser.add_argument("--sand-poisson", type=float, default=defaults["sand_poisson"])
+    parser.add_argument("--sand-yield-pressure", type=float, default=defaults["sand_yield_pressure"])
+    parser.add_argument("--sand-damping", type=float, default=defaults["sand_damping"])
+    parser.add_argument("--sand-jitter-scale", type=float, default=defaults["sand_jitter_scale"])
     parser.add_argument("--frames", type=int, default=defaults["frames"])
     parser.add_argument("--steps-per-frame", type=int, default=defaults["steps_per_frame"])
     parser.add_argument(
@@ -172,8 +207,8 @@ def angular_velocity_from_mats(prev: np.ndarray, curr: np.ndarray, dt: float) ->
     return (skew / max(dt, 1.0e-6)).astype(np.float32)
 
 
-def make_scene_xml() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+def make_scene_xml(paths: BridgePaths) -> None:
+    paths.out_dir.mkdir(parents=True, exist_ok=True)
     text = PANDA_XML.read_text(encoding="utf-8")
     text = text.replace(
         'meshdir="assets"',
@@ -234,7 +269,7 @@ def make_scene_xml() -> None:
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
-    SCENE_XML.write_text(text, encoding="utf-8")
+    paths.scene_xml.write_text(text, encoding="utf-8")
 
 
 def solve_bridge_waypoints(model: mujoco.MjModel, site_id: int) -> list[np.ndarray]:
@@ -305,10 +340,29 @@ def planned_bridge_ctrl(waypoints: list[np.ndarray], sim_time: float, total_time
 
 
 class NewtonSandBridge:
-    def __init__(self, device: str = "cuda:0", voxel_size: float = 0.045, particles_per_cell: float = 3.0):
+    def __init__(
+        self,
+        device: str = "cuda:0",
+        voxel_size: float = 0.045,
+        particles_per_cell: float = 3.0,
+        sand_density: float = 1550.0,
+        sand_friction: float = 0.74,
+        sand_young_modulus: float = 1.0e6,
+        sand_poisson: float = 0.28,
+        sand_yield_pressure: float = 1.0e6,
+        sand_damping: float = 0.02,
+        sand_jitter_scale: float = 1.8,
+    ):
         self.device = device
         self.voxel_size = voxel_size
         self.particles_per_cell = particles_per_cell
+        self.sand_density = sand_density
+        self.sand_friction = sand_friction
+        self.sand_young_modulus = sand_young_modulus
+        self.sand_poisson = sand_poisson
+        self.sand_yield_pressure = sand_yield_pressure
+        self.sand_damping = sand_damping
+        self.sand_jitter_scale = sand_jitter_scale
         self.tool_half = np.asarray([0.082, 0.122, 0.015], dtype=np.float32)
 
         collider_builder = newton.ModelBuilder()
@@ -336,12 +390,12 @@ class NewtonSandBridge:
         SolverImplicitMPM.register_custom_attributes(sand_builder)
         self._emit_sand_particles(sand_builder)
         self.sand_model = sand_builder.finalize(device=device)
-        self._set_material("young_modulus", 1.0e6)
-        self._set_material("poisson_ratio", 0.28)
-        self._set_material("friction", 0.74)
-        self._set_material("yield_pressure", 1.0e6)
+        self._set_material("young_modulus", sand_young_modulus)
+        self._set_material("poisson_ratio", sand_poisson)
+        self._set_material("friction", sand_friction)
+        self._set_material("yield_pressure", sand_yield_pressure)
         self._set_material("tensile_yield_ratio", 0.0)
-        self._set_material("damping", 0.02)
+        self._set_material("damping", sand_damping)
 
         opts = SolverImplicitMPM.Config()
         opts.voxel_size = voxel_size
@@ -381,7 +435,7 @@ class NewtonSandBridge:
         )
 
     def _emit_sand_particles(self, builder: newton.ModelBuilder) -> None:
-        density = 1550.0
+        density = self.sand_density
         lo = np.asarray([0.205, 0.125, 0.035], dtype=np.float64)
         hi = np.asarray([0.835, 0.435, 0.205], dtype=np.float64)
         res = np.asarray(np.ceil(self.particles_per_cell * (hi - lo) / self.voxel_size), dtype=int)
@@ -399,9 +453,9 @@ class NewtonSandBridge:
             cell_y=float(cell[1]),
             cell_z=float(cell[2]),
             mass=mass,
-            jitter=1.8 * radius,
+            jitter=float(self.sand_jitter_scale) * radius,
             radius_mean=radius,
-            custom_attributes={"mpm:friction": 0.74},
+            custom_attributes={"mpm:friction": self.sand_friction},
         )
 
     def _set_material(self, name: str, value: float) -> None:
@@ -517,8 +571,9 @@ def draw_bridge_overlay(frame_bgr: np.ndarray, force_world: np.ndarray, qerr: fl
 
 def run() -> None:
     args = parse_args()
-    make_scene_xml()
-    model = mujoco.MjModel.from_xml_path(SCENE_XML.as_posix())
+    paths = bridge_paths(args.output_dir if args.output_dir.is_absolute() else ROOT / args.output_dir)
+    make_scene_xml(paths)
+    model = mujoco.MjModel.from_xml_path(paths.scene_xml.as_posix())
     data = mujoco.MjData(model)
     key_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_KEY, "home")
     mujoco.mj_resetDataKeyframe(model, data, key_id)
@@ -540,6 +595,13 @@ def run() -> None:
         device=args.device,
         voxel_size=args.voxel_size,
         particles_per_cell=args.particles_per_cell,
+        sand_density=args.sand_density,
+        sand_friction=args.sand_friction,
+        sand_young_modulus=args.sand_young_modulus,
+        sand_poisson=args.sand_poisson,
+        sand_yield_pressure=args.sand_yield_pressure,
+        sand_damping=args.sand_damping,
+        sand_jitter_scale=args.sand_jitter_scale,
     )
     mj_dt = float(model.opt.timestep)
     frames_n = args.frames
@@ -655,19 +717,26 @@ def run() -> None:
             )
 
     renderer.close()
-    write_video(VIDEO_PATH, frames)
-    write_video(ROBOT_VIDEO_PATH, robot_frames)
-    write_video(SAND_VIDEO_PATH, sand_frames)
-    cv2.imwrite(PREVIEW_PATH.as_posix(), cv2.cvtColor(frames[-1], cv2.COLOR_RGB2BGR))
-    write_sheet(SHEET_PATH, frames)
+    write_video(paths.video, frames)
+    write_video(paths.robot_video, robot_frames)
+    write_video(paths.sand_video, sand_frames)
+    cv2.imwrite(paths.preview.as_posix(), cv2.cvtColor(frames[-1], cv2.COLOR_RGB2BGR))
+    write_sheet(paths.sheet, frames)
     np.savez_compressed(
-        LOG_PATH,
+        paths.log,
         frame=np.asarray(log_frames, dtype=np.int32),
         force=np.asarray(log_force, dtype=np.float32),
         tool_pos=np.asarray(log_tool, dtype=np.float32),
         particle_pos=np.asarray(log_particle_pos, dtype=object),
         voxel_size=np.asarray(bridge.voxel_size, dtype=np.float32),
         particles_per_cell=np.asarray(bridge.particles_per_cell, dtype=np.float32),
+        sand_density=np.asarray(bridge.sand_density, dtype=np.float32),
+        sand_friction=np.asarray(bridge.sand_friction, dtype=np.float32),
+        sand_young_modulus=np.asarray(bridge.sand_young_modulus, dtype=np.float32),
+        sand_poisson=np.asarray(bridge.sand_poisson, dtype=np.float32),
+        sand_yield_pressure=np.asarray(bridge.sand_yield_pressure, dtype=np.float32),
+        sand_damping=np.asarray(bridge.sand_damping, dtype=np.float32),
+        sand_jitter_scale=np.asarray(bridge.sand_jitter_scale, dtype=np.float32),
         device=np.asarray(args.device),
         sand_render_mode=np.asarray(args.sand_render_mode),
         render_radius=np.asarray(args.render_radius, dtype=np.int32),
@@ -675,13 +744,13 @@ def run() -> None:
         alpha_blur=np.asarray(args.alpha_blur, dtype=np.float32),
         force_feedback_scale=np.asarray(args.force_feedback_scale, dtype=np.float32),
     )
-    print(f"scene={SCENE_XML}")
-    print(f"video={VIDEO_PATH}")
-    print(f"robot_video={ROBOT_VIDEO_PATH}")
-    print(f"sand_video={SAND_VIDEO_PATH}")
-    print(f"preview={PREVIEW_PATH}")
-    print(f"sheet={SHEET_PATH}")
-    print(f"log={LOG_PATH}")
+    print(f"scene={paths.scene_xml}")
+    print(f"video={paths.video}")
+    print(f"robot_video={paths.robot_video}")
+    print(f"sand_video={paths.sand_video}")
+    print(f"preview={paths.preview}")
+    print(f"sheet={paths.sheet}")
+    print(f"log={paths.log}")
 
 
 if __name__ == "__main__":

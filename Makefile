@@ -1,4 +1,4 @@
-.PHONY: install install-lite test smoke demo demo-no-bridge artifacts clean-artifacts
+.PHONY: install install-lite test smoke smoke-bridge demo demo-no-bridge experiment-smoke experiment artifacts clean-artifacts
 
 install:
 	./install.sh
@@ -21,6 +21,12 @@ demo:
 
 demo-no-bridge:
 	./scripts/reproduce_demo_bundle.sh --full --skip-bridge
+
+experiment-smoke:
+	python scripts/run_experiment_sequence.py --quick --skip-bridge
+
+experiment:
+	python scripts/run_experiment_sequence.py
 
 artifacts:
 	python scripts/package_demo_artifacts.py

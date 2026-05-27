@@ -1,0 +1,59 @@
+{
+  "sequence_name": "reference_heightfield_intrusion_v001",
+  "description": "Reference sequence for physically inspectable granular intrusion with density, blade, and MuJoCo-Newton views.",
+  "output_root": "outputs/experiments",
+  "stages": {
+    "density_render": {
+      "enabled": true,
+      "device": "cuda:0",
+      "frames": 60,
+      "substeps": 34,
+      "quick_frames": 6,
+      "quick_substeps": 4
+    },
+    "blade_demo": {
+      "enabled": true,
+      "config": "configs/sand3d_blade_demo.json",
+      "quick_device": "cpu",
+      "quick_frames": 6,
+      "quick_substeps_per_frame": 4,
+      "overrides": {
+        "display_force_scale": 0.0012,
+        "mpm": {
+          "young": 2200.0,
+          "poisson": 0.24,
+          "dp_alpha": 0.42,
+          "gravity": -1.35,
+          "tool_mu": 0.44,
+          "damping": 0.998
+        }
+      }
+    },
+    "newton_bridge": {
+      "enabled": true,
+      "config": "configs/newton_bridge_heightfield.json",
+      "quick_frames": 4,
+      "quick_steps_per_frame": 1,
+      "quick_voxel_size": 0.06,
+      "quick_particles_per_cell": 1.2,
+      "overrides": {
+        "sand_render_mode": "heightfield",
+        "render_blur": 2.4,
+        "alpha_cutoff": 0.06,
+        "alpha_gain": 0.48,
+        "sand_density": 1550.0,
+        "sand_friction": 0.74,
+        "sand_young_modulus": 1000000.0,
+        "sand_poisson": 0.28,
+        "sand_yield_pressure": 1000000.0,
+        "sand_damping": 0.02,
+        "sand_jitter_scale": 1.8
+      }
+    }
+  },
+  "metrics": {
+    "train_fraction": 0.7,
+    "target": "force_norm",
+    "baseline": "previous_force_norm"
+  }
+}

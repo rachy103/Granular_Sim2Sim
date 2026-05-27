@@ -17,6 +17,7 @@ DEFAULT_PATTERNS = [
     "install.sh",
     "pyproject.toml",
     "configs/*.json",
+    "configs/**/*.json",
     "constraints/*.txt",
     "docs/reproducibility.md",
     "outputs/mujoco_newton_mpm_bridge/*.mp4",

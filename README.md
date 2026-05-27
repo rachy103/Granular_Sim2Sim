@@ -62,6 +62,34 @@ make smoke
 make demo
 ```
 
+## Experiment Pipeline
+
+Named experiment sequences are run through a single wrapper:
+
+```bash
+python scripts/run_experiment_sequence.py --config configs/experiments/reference_heightfield_intrusion.json
+```
+
+For a quick CPU-oriented check:
+
+```bash
+make experiment-smoke
+```
+
+Each sequence writes a fixed layout under `outputs/experiments/<sequence_name>/`:
+
+```text
+config/              resolved experiment and stage configs
+video_set/           rendered videos and previews grouped by stage
+dataset_metrics/     dataset/video/force/particle summaries
+training_metrics/    baseline or learned training metrics
+inference_results/   prediction CSVs and inference metrics
+logs/                command logs from each stage
+runs/                raw per-stage outputs
+```
+
+See `docs/experiment_pipeline.md` for the full wrapper contract.
+
 ## Artifact Policy
 
 Large files are treated as reproducible artifacts, not source. The repo does not
