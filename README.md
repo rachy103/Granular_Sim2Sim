@@ -52,6 +52,16 @@ make demo           # regenerate the publishable demo videos and artifact zip
 
 See `docs/reproducibility.md` for the full source/asset/artifact contract.
 
+For the pinned reference environment and full demo reproduction, run:
+
+```bash
+git clone https://github.com/rachy103/Granular_Robot.git
+cd Granular_Robot
+./install.sh --locked
+make smoke
+make demo
+```
+
 ## Artifact Policy
 
 Large files are treated as reproducible artifacts, not source. The repo does not
