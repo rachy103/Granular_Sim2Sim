@@ -11,8 +11,8 @@ WSL2 plus an NVIDIA CUDA-capable GPU, but the code does not depend on the local
 venv name used during development.
 
 ```bash
-git clone https://github.com/rachy103/granular-robot.git
-cd granular-robot
+git clone https://github.com/rachy103/Granular_Robot.git
+cd Granular_Robot
 
 chmod +x install.sh
 ./install.sh

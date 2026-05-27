@@ -24,8 +24,8 @@ Ignored by git:
 Fresh clone path:
 
 ```bash
-git clone https://github.com/rachy103/granular-robot.git
-cd granular-robot
+git clone https://github.com/rachy103/Granular_Robot.git
+cd Granular_Robot
 ./install.sh
 ```
 
