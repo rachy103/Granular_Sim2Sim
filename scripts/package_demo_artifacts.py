@@ -14,7 +14,11 @@ DIST = ROOT / "dist"
 
 DEFAULT_PATTERNS = [
     "README.md",
+    "install.sh",
+    "pyproject.toml",
     "configs/*.json",
+    "constraints/*.txt",
+    "docs/reproducibility.md",
     "outputs/mujoco_newton_mpm_bridge/*.mp4",
     "outputs/mujoco_newton_mpm_bridge/mujoco_franka_newton_mpm_bridge_preview.png",
     "outputs/mujoco_newton_mpm_bridge/mujoco_franka_newton_mpm_bridge_sheet.png",

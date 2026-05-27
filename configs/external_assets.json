@@ -1,0 +1,7 @@
+{
+  "mujoco_menagerie": {
+    "repo": "https://github.com/google-deepmind/mujoco_menagerie.git",
+    "commit": "b846dd12bc459d776cccb3dee0b1d02acbf7a9c7",
+    "required_subdir": "franka_emika_panda"
+  }
+}

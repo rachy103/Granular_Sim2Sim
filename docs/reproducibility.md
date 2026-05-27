@@ -29,8 +29,21 @@ cd Granular_Robot
 ./install.sh
 ```
 
-The installer creates `.venv`, installs the package, downloads MuJoCo
-Menagerie, and runs import tests. A CPU-oriented install can skip MuJoCo assets:
+The installer creates `.venv`, installs the package, downloads MuJoCo Menagerie
+at the commit recorded in `configs/external_assets.json`, and runs import tests.
+
+For the reference Python package versions tested in this repo:
+
+```bash
+./install.sh --locked
+```
+
+This applies `constraints/reference-linux-py310-cu128.txt` during installation.
+It is a WSL2/Linux Python 3.10 CUDA reference lock; if pip cannot resolve a
+CUDA-specific wheel on a different machine, use the normal installer and compare
+the resulting environment against the constraints file.
+
+A CPU-oriented install can skip MuJoCo assets:
 
 ```bash
 ./install.sh --lite --no-menagerie
@@ -90,8 +103,9 @@ python scripts/package_demo_artifacts.py --include-heavy-usd
 ```
 
 Use Git LFS only for assets that are not practically reproducible and must be
-versioned with code. Current MuJoCo assets are reproducible from
-`google-deepmind/mujoco_menagerie`, so they stay outside git.
+versioned with code. Current MuJoCo assets are reproducible from the pinned
+`google-deepmind/mujoco_menagerie` commit in `configs/external_assets.json`, so
+they stay outside git.
 
 ## Known Hardware Expectations
 

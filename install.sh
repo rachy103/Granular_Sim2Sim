@@ -7,7 +7,9 @@ cd "$ROOT"
 ENV_DIR="${ENV_DIR:-.venv}"
 EXTRAS="${EXTRAS:-mujoco,newton,dev}"
 MENAGERIE_REPO="${MENAGERIE_REPO:-https://github.com/google-deepmind/mujoco_menagerie.git}"
+MENAGERIE_REF="${MENAGERIE_REF:-b846dd12bc459d776cccb3dee0b1d02acbf7a9c7}"
 MENAGERIE_DIR="${MENAGERIE_DIR:-mujoco_menagerie}"
+LOCK_FILE="${LOCK_FILE:-constraints/reference-linux-py310-cu128.txt}"
 RUN_TESTS=1
 RUN_SMOKE=0
 
@@ -19,6 +21,7 @@ Options:
   --env-dir PATH       Python virtualenv path (default: .venv)
   --extras LIST        pip extras to install (default: mujoco,newton,dev)
   --lite               install only the compact Warp demo dependencies
+  --locked             constrain package versions to the tested reference lock
   --no-menagerie       skip downloading google-deepmind/mujoco_menagerie
   --force-menagerie    re-clone mujoco_menagerie if it already exists
   --no-tests           skip pytest after installation
@@ -27,6 +30,7 @@ Options:
 
 Examples:
   ./install.sh
+  ./install.sh --locked
   ./install.sh --lite --smoke
   ENV_DIR=/tmp/granular-venv ./install.sh --extras mujoco,newton,dev
 EOF
@@ -34,6 +38,7 @@ EOF
 
 FORCE_MENAGERIE=0
 SKIP_MENAGERIE=0
+USE_LOCK=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -47,6 +52,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --lite)
       EXTRAS=""
+      shift
+      ;;
+    --locked)
+      USE_LOCK=1
       shift
       ;;
     --no-menagerie)
@@ -94,10 +103,18 @@ fi
 source "$ENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip setuptools wheel
+PIP_CONSTRAINT_ARGS=()
+if [[ "$USE_LOCK" -eq 1 ]]; then
+  if [[ ! -f "$LOCK_FILE" ]]; then
+    echo "Lock file not found: $LOCK_FILE" >&2
+    exit 1
+  fi
+  PIP_CONSTRAINT_ARGS=(-c "$LOCK_FILE")
+fi
 if [[ -n "$EXTRAS" ]]; then
-  python -m pip install -e ".[$EXTRAS]"
+  python -m pip install "${PIP_CONSTRAINT_ARGS[@]}" -e ".[$EXTRAS]"
 else
-  python -m pip install -e .
+  python -m pip install "${PIP_CONSTRAINT_ARGS[@]}" -e .
 fi
 
 if [[ "$SKIP_MENAGERIE" -eq 0 ]]; then
@@ -113,10 +130,12 @@ if [[ "$SKIP_MENAGERIE" -eq 0 ]]; then
     rm -rf "$MENAGERIE_DIR"
   fi
   if [[ ! -d "$MENAGERIE_DIR/.git" ]]; then
-    git clone --depth 1 "$MENAGERIE_REPO" "$MENAGERIE_DIR"
+    git clone --filter=blob:none --no-checkout "$MENAGERIE_REPO" "$MENAGERIE_DIR"
   else
-    git -C "$MENAGERIE_DIR" fetch --depth 1 origin main || true
+    git -C "$MENAGERIE_DIR" remote set-url origin "$MENAGERIE_REPO"
   fi
+  git -C "$MENAGERIE_DIR" fetch --depth 1 origin "$MENAGERIE_REF"
+  git -C "$MENAGERIE_DIR" checkout --detach "$MENAGERIE_REF"
 fi
 
 python - <<'PY'
@@ -145,7 +164,11 @@ if [[ "$RUN_TESTS" -eq 1 ]]; then
 fi
 
 if [[ "$RUN_SMOKE" -eq 1 ]]; then
-  python scripts/run_3d_density_render_demo.py --frames 6 --substeps 4 --out outputs/smoke_density_render
+  python scripts/run_3d_density_render_demo.py \
+    --device "${GRANULAR_SMOKE_DEVICE:-cpu}" \
+    --frames 6 \
+    --substeps 4 \
+    --out outputs/smoke_density_render
 fi
 
 cat <<EOF
@@ -156,7 +179,7 @@ Activate this environment with:
   source $ENV_DIR/bin/activate
 
 Reproduce the main bridge demo with:
-  python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 --particles-per-cell 3.0 --sand-render-mode heightfield --render-blur 2.4 --alpha-cutoff 0.060 --alpha-gain 0.48
+  python scripts/run_mujoco_newton_mpm_bridge.py --config configs/newton_bridge_heightfield.json
 
 Package generated demo artifacts for Drive or GitHub Release with:
   python scripts/package_demo_artifacts.py

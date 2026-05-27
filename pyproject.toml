@@ -15,8 +15,11 @@ mujoco = [
   "mujoco-warp>=3.8",
 ]
 newton = [
-  "newton[examples]>=1.2",
-  "usd-core>=26.5",
+  "newton==1.2.0",
+  "usd-core==26.5",
+]
+newton-examples = [
+  "newton[examples]==1.2.0",
 ]
 dev = [
   "pytest>=8",
