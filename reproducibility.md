@@ -71,6 +71,16 @@ Publishable local bundle:
 make demo
 ```
 
+Pinned reference reproduction from a fresh checkout:
+
+```bash
+git clone https://github.com/rachy103/Granular_Robot.git
+cd Granular_Robot
+./install.sh --locked
+make smoke
+make demo
+```
+
 The full demo regenerates:
 
 - `outputs/3d_mpm_density_render/sand3d_density_render.mp4`
