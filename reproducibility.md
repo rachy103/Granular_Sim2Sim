@@ -76,6 +76,7 @@ Experiment and learning pipeline smoke check:
 
 ```bash
 make pipeline-smoke
+make sweep-smoke
 ```
 
 Pinned reference reproduction from a fresh checkout:

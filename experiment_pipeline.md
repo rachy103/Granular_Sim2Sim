@@ -25,6 +25,8 @@ make experiment-smoke
 make experiment
 make pipeline-smoke
 make pipeline
+make sweep-smoke
+make sweep
 ```
 
 ## Output Layout
@@ -130,3 +132,51 @@ python scripts/run_mujoco_newton_mpm_bridge.py \
   --sand-young-modulus 1500000 \
   --sand-jitter-scale 1.4
 ```
+
+## Property Sweep
+
+For amortized inference, a single material label is not enough. The sweep
+runner creates many sequence configs by Latin-hypercube sampling material
+targets and action nuisance variables:
+
+```bash
+python scripts/run_property_sweep.py --config configs/sweeps/lhs_property_sweep.json
+```
+
+Fast smoke check:
+
+```bash
+python scripts/run_property_sweep.py --quick --skip-bridge --count 2 --sweep-name smoke_lhs_sweep
+```
+
+The default sweep ranges are:
+
+```text
+phi_deg:       25 to 45
+cohesion_kpa: 0 to 15
+speed_scale, depth_scale, drag_distance_scale, angle_offset, y_offset, z_offset
+```
+
+Each sampled material label is mapped into the compact MPM model before the
+sequence is run. `phi_deg` controls the Drucker-Prager friction coefficient and
+tool friction; `cohesion_kpa` controls a simple yield offset and stiffness
+scale. This is still a compact research proxy, not a calibrated soil law, but it
+does make the labels influence the force traces.
+
+The sweep layout is:
+
+```text
+outputs/sweeps/<sweep_name>/
+  configs/              source, resolved, and per-sample configs
+  sequences/            normal experiment-sequence folders
+  dataset/              aggregate probing_windows.npz and normalization stats
+  training_metrics/     aggregate representation and MDN metrics
+  inference_results/    aggregate predictions and posterior plots
+  logs/                 per-sample and aggregate training logs
+  samples.csv           LHS material/action table with derived solver controls
+  sweep_manifest.json
+```
+
+The aggregate dataset is rebuilt from every sample's `x_raw` and normalized
+globally using the aggregate train split. This preserves cross-material scale
+differences before applying the required z-score normalization.
