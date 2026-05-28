@@ -29,8 +29,9 @@ cd Granular_Robot
 ./install.sh
 ```
 
-The installer creates `.venv`, installs the package, downloads MuJoCo Menagerie
-at the commit recorded in `configs/external_assets.json`, and runs import tests.
+The installer creates `.venv`, installs the package with MuJoCo, Newton, and
+learning extras, downloads MuJoCo Menagerie at the commit recorded in
+`configs/external_assets.json`, and runs import tests.
 
 For the reference Python package versions tested in this repo:
 
@@ -71,6 +72,12 @@ Publishable local bundle:
 make demo
 ```
 
+Experiment and learning pipeline smoke check:
+
+```bash
+make pipeline-smoke
+```
+
 Pinned reference reproduction from a fresh checkout:
 
 ```bash
@@ -105,10 +112,11 @@ shared through Google Drive or GitHub Releases using:
 python scripts/package_demo_artifacts.py
 ```
 
-Very large USD/PLY files are excluded by default. Include them only when the
-renderer or particle export itself is under review:
+Experiment sequence outputs and very large USD/PLY files are excluded by
+default. Include them only when those generated artifacts are under review:
 
 ```bash
+python scripts/package_demo_artifacts.py --include-experiments
 python scripts/package_demo_artifacts.py --include-heavy-usd
 ```
 
@@ -128,5 +136,6 @@ warp-lang 1.13.0
 mujoco 3.8.1
 mujoco-warp 3.8.1
 newton 1.2.0
+torch 2.11.0+cu128
 NVIDIA RTX 5060
 ```
