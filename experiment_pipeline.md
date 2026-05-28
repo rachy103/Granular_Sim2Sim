@@ -149,6 +149,10 @@ Fast smoke check:
 python scripts/run_property_sweep.py --quick --skip-bridge --count 2 --sweep-name smoke_lhs_sweep
 ```
 
+The default sweep uses a paired design: sample material parameters first, then
+repeat several action variations for each material. This keeps action nuisance
+variables from masquerading as material changes.
+
 The default sweep ranges are:
 
 ```text
@@ -179,4 +183,32 @@ outputs/sweeps/<sweep_name>/
 
 The aggregate dataset is rebuilt from every sample's `x_raw` and normalized
 globally using the aggregate train split. This preserves cross-material scale
-differences before applying the required z-score normalization.
+differences before applying the required z-score normalization. Train,
+validation, and test splits are grouped by `material_id`, so repeated actions
+from the same material do not leak across splits.
+
+## Scatter Analysis
+
+Before trusting the MDN, inspect whether the force summaries separate material
+properties:
+
+```bash
+python scripts/analyze_sweep_scatter.py --sweep-root outputs/sweeps/<sweep_name>
+```
+
+This writes:
+
+```text
+analysis/force_summary.csv
+analysis/correlations.csv
+analysis/scatter_report.json
+analysis/scatter_report.md
+analysis/scatter_phi_deg_vs_max_raw_force.png
+analysis/scatter_cohesion_kpa_vs_max_raw_force.png
+...
+```
+
+If the report says `insufficient_contact`, rerun without `--quick` or make the
+trajectory more intrusive. If it says `nuisance_dominates_force`, use the paired
+design with multiple actions per material and keep action variables available
+for downstream conditioning/diagnostics.
