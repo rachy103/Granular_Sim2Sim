@@ -19,8 +19,8 @@ chmod +x install.sh
 ```
 
 The installer creates `.venv`, installs the Python package with MuJoCo, Newton,
-and test extras, shallow-clones `google-deepmind/mujoco_menagerie`, and runs the
-import tests. For the exact tested package constraints, use:
+learning, and test extras, shallow-clones `google-deepmind/mujoco_menagerie`,
+and runs the import tests. For the exact tested package constraints, use:
 
 ```bash
 ./install.sh --locked
@@ -74,6 +74,7 @@ For a quick CPU-oriented check:
 
 ```bash
 make experiment-smoke
+make pipeline-smoke
 ```
 
 Each sequence writes a fixed layout under `outputs/experiments/<sequence_name>/`:
@@ -82,11 +83,19 @@ Each sequence writes a fixed layout under `outputs/experiments/<sequence_name>/`
 config/              resolved experiment and stage configs
 video_set/           rendered videos and previews grouped by stage
 dataset_metrics/     dataset/video/force/particle summaries
-training_metrics/    baseline or learned training metrics
-inference_results/   prediction CSVs and inference metrics
+training_metrics/    baseline metrics, representation loss, MDN metrics, model
+inference_results/   prediction CSVs, posterior plots, inference metrics
 logs/                command logs from each stage
 runs/                raw per-stage outputs
 ```
+
+The wrapper also builds the learning tensor
+`X in R^(N x T x 12)` from 6D wrench plus 6D end-effector kinematics, using
+50 Hz resampling and train-split z-score normalization by default. The learned
+path is a compact 1D-CNN/Transformer encoder with InfoNCE representation
+learning followed by an MDN decoder for `phi_deg` and `cohesion_kpa`.
+Set `learning.num_mixtures` to `1` in the experiment config for a single
+Gaussian decoder.
 
 See `docs/experiment_pipeline.md` for the full wrapper contract.
 
@@ -106,10 +115,12 @@ python scripts/package_demo_artifacts.py
 ```
 
 This writes `dist/granular-robot-demo-artifacts-<git-sha>.zip` with videos,
-previews, logs, configs, and a SHA-256 manifest. Very large Newton USD/PLY files
-are excluded by default; include them only for renderer debugging:
+previews, logs, configs, and a SHA-256 manifest. Experiment sequence outputs and
+very large Newton USD/PLY files are excluded by default; include them explicitly
+when needed:
 
 ```bash
+python scripts/package_demo_artifacts.py --include-experiments
 python scripts/package_demo_artifacts.py --include-heavy-usd
 ```
 

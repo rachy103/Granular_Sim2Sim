@@ -2,7 +2,9 @@
 # environment on 2026-05-27. Use this as a constraints file, not as a minimal
 # requirements file:
 #
-#   python -m pip install -c constraints/reference-linux-py310-cu128.txt -e ".[mujoco,newton,dev]"
+#   python -m pip install -c constraints/reference-linux-py310-cu128.txt \
+#     --extra-index-url https://download.pytorch.org/whl/cu128 \
+#     -e ".[mujoco,newton,learning,dev]"
 #
 # CUDA/PyTorch wheels with local version tags such as +cu128 may require the
 # matching upstream wheel index if they become part of a future dependency solve.

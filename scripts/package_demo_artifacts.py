@@ -19,7 +19,7 @@ DEFAULT_PATTERNS = [
     "configs/*.json",
     "configs/**/*.json",
     "constraints/*.txt",
-    "docs/reproducibility.md",
+    "docs/*.md",
     "outputs/mujoco_newton_mpm_bridge/*.mp4",
     "outputs/mujoco_newton_mpm_bridge/mujoco_franka_newton_mpm_bridge_preview.png",
     "outputs/mujoco_newton_mpm_bridge/mujoco_franka_newton_mpm_bridge_sheet.png",
@@ -30,6 +30,17 @@ DEFAULT_PATTERNS = [
     "outputs/3d_mpm_blade/*.png",
     "outputs/3d_mpm_blade/*.csv",
     "outputs/3d_mpm_blade/resolved_config.json",
+]
+
+EXPERIMENT_PATTERNS = [
+    "outputs/experiments/*/config/*.json",
+    "outputs/experiments/*/dataset_metrics/*.json",
+    "outputs/experiments/*/training_metrics/*.json",
+    "outputs/experiments/*/inference_results/*.json",
+    "outputs/experiments/*/inference_results/*.csv",
+    "outputs/experiments/*/inference_results/*.png",
+    "outputs/experiments/*/video_set/**/*.mp4",
+    "outputs/experiments/*/video_set/**/*.png",
 ]
 
 HEAVY_PATTERNS = [
@@ -43,6 +54,7 @@ HEAVY_PATTERNS = [
 REPRO_COMMANDS = [
     "python scripts/run_3d_density_render_demo.py",
     "python scripts/run_3d_blade_demo.py --config configs/sand3d_blade_demo.json",
+    "python scripts/run_experiment_sequence.py --quick --skip-bridge",
     (
         "python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 "
         "--particles-per-cell 3.0 --sand-render-mode heightfield "
@@ -84,11 +96,14 @@ def format_mb(size: int) -> float:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--include-experiments", action="store_true")
     parser.add_argument("--include-heavy-usd", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     patterns = list(DEFAULT_PATTERNS)
+    if args.include_experiments:
+        patterns.extend(EXPERIMENT_PATTERNS)
     if args.include_heavy_usd:
         patterns.extend(HEAVY_PATTERNS)
 
@@ -102,6 +117,7 @@ def main() -> None:
         "name": "granular-robot-demo-artifacts",
         "git_sha": sha,
         "created_utc": datetime.now(timezone.utc).isoformat(),
+        "include_experiments": bool(args.include_experiments),
         "include_heavy_usd": bool(args.include_heavy_usd),
         "reproduce_commands": REPRO_COMMANDS,
         "files": [

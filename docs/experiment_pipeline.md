@@ -23,6 +23,8 @@ Make targets:
 ```bash
 make experiment-smoke
 make experiment
+make pipeline-smoke
+make pipeline
 ```
 
 ## Output Layout
@@ -37,18 +39,30 @@ outputs/experiments/reference_heightfield_intrusion_v001/
     blade_demo_config.json
     newton_bridge_config.json
     git_info.json
+    workspace_scan.json
   video_set/
     density_render/
     blade_demo/
     newton_bridge/
   dataset_metrics/
     dataset_summary.json
+    normalization_stats.json
+    probing_tensor_metrics.json
     video_metrics.json
   training_metrics/
     baseline_force_model.json
+    mdn_training_metrics.json
+    model_config.json
+    representation_metrics.json
+    temporal_mdn.pt
   inference_results/
     baseline_force_predictions.csv
     inference_metrics.json
+    learning_inference_metrics.json
+    mdn_predictions.csv
+    posterior_phi_deg.png
+    posterior_cohesion_kpa.png
+    posterior_summary.json
   logs/
     density_render.log
     blade_demo.log
@@ -57,6 +71,8 @@ outputs/experiments/reference_heightfield_intrusion_v001/
     density_render/
     blade_demo/
     newton_bridge/
+    probing_dataset/
+      probing_windows.npz
   experiment_manifest.json
 ```
 
@@ -66,15 +82,32 @@ Dataset metrics summarize generated videos, force signals, tool path length,
 particle count, particle height range, and mean particle displacement when a
 Newton bridge log is present.
 
+The probing dataset converts synchronized wrench and end-effector kinematics
+into windows:
+
+```text
+X in R^(N x T x 12)
+feature order = fx, fy, fz, tx, ty, tz, px, py, pz, vx, vy, vz
+```
+
+The default sensor rate is 50 Hz. Normalization is train-split z-score by
+default and is written to `dataset_metrics/normalization_stats.json`. Quick
+smoke runs use a one-step window only to verify the filesystem and training
+plumbing; full runs use the configured `dataset.window_length`.
+
 Training metrics currently compute a deterministic baseline over the available
 force sequence. The default baseline predicts the next force norm using the
 previous force norm. This is intentionally simple: it gives future learned
 models a reproducible floor to beat.
 
-Inference results write per-sample baseline predictions and aggregate validation
-MAE/RMSE. When a learned model is added, it should write its predictions into the
-same `inference_results/` folder and its training curves into
-`training_metrics/`.
+The learned path runs a compact 1D-CNN plus Transformer encoder. Phase 1 uses
+InfoNCE on augmented windows for representation learning. Phase 2 fine-tunes an
+MDN head whose output is a diagonal Gaussian mixture over material targets. Set
+`learning.num_mixtures` to `1` to use the same path as a single Gaussian
+decoder.
+
+Inference results write per-sample baseline predictions, MDN predictions,
+aggregate MAE/RMSE, inference latency per window, and posterior plots.
 
 ## Config Controls
 
@@ -84,7 +117,9 @@ The reference experiment config exposes:
 - standalone Warp MPM material settings
 - MuJoCo-Newton bridge render mode and visual smoothing
 - Newton sand density, friction, stiffness, damping, and jitter scale
-- train/validation split for baseline learning metrics
+- dataset sensor rate, window length, stride, normalization, and target labels
+- train/validation/test split for baseline and learned metrics
+- learning model size, epochs, MDN mixture count, and inference timing repeats
 
 The bridge runner also accepts these controls directly, for example:
 

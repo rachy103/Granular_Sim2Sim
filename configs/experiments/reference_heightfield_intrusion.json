@@ -2,6 +2,10 @@
   "sequence_name": "reference_heightfield_intrusion_v001",
   "description": "Reference sequence for physically inspectable granular intrusion with density, blade, and MuJoCo-Newton views.",
   "output_root": "outputs/experiments",
+  "workspace": {
+    "scan_depth": 2,
+    "environment_hint": "Use the active Python/venv, or run ./install.sh --locked before this pipeline."
+  },
   "stages": {
     "density_render": {
       "enabled": true,
@@ -55,5 +59,43 @@
     "train_fraction": 0.7,
     "target": "force_norm",
     "baseline": "previous_force_norm"
+  },
+  "dataset": {
+    "enabled": true,
+    "sample_rate_hz": 50.0,
+    "bridge_frame_rate_hz": 30.0,
+    "window_length": 32,
+    "stride": 8,
+    "quick_window_length": 1,
+    "quick_stride": 1,
+    "normalization": "zscore",
+    "train_fraction": 0.7,
+    "validation_fraction": 0.15,
+    "targets": {
+      "phi_deg": 34.0,
+      "cohesion_kpa": 0.05
+    }
+  },
+  "learning": {
+    "enabled": true,
+    "device": "auto",
+    "seed": 7,
+    "batch_size": 32,
+    "quick_batch_size": 4,
+    "representation_epochs": 6,
+    "quick_representation_epochs": 1,
+    "mdn_epochs": 12,
+    "quick_mdn_epochs": 1,
+    "representation_lr": 0.001,
+    "mdn_lr": 0.0008,
+    "latent_dim": 64,
+    "conv_channels": 64,
+    "transformer_layers": 2,
+    "attention_heads": 4,
+    "dropout": 0.05,
+    "num_mixtures": 3,
+    "temperature": 0.12,
+    "augmentation_noise_std": 0.015,
+    "timing_repeats": 10
   }
 }

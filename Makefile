@@ -1,4 +1,4 @@
-.PHONY: install install-lite test smoke smoke-bridge demo demo-no-bridge experiment-smoke experiment artifacts clean-artifacts
+.PHONY: install install-lite test smoke smoke-bridge demo demo-no-bridge experiment-smoke experiment pipeline-smoke pipeline artifacts clean-artifacts
 
 install:
 	./install.sh
@@ -27,6 +27,12 @@ experiment-smoke:
 
 experiment:
 	python scripts/run_experiment_sequence.py
+
+pipeline-smoke:
+	python scripts/run_experiment_sequence.py --quick --skip-bridge
+
+pipeline:
+	python scripts/run_experiment_sequence.py --config configs/experiments/reference_heightfield_intrusion.json
 
 artifacts:
 	python scripts/package_demo_artifacts.py

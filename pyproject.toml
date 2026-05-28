@@ -21,6 +21,9 @@ newton = [
 newton-examples = [
   "newton[examples]==1.2.0",
 ]
+learning = [
+  "torch>=2.2",
+]
 dev = [
   "pytest>=8",
 ]

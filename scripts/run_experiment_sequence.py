@@ -25,6 +25,14 @@ from granular_mpm.metrics import (  # noqa: E402
     write_json,
     write_prediction_csv,
 )
+from granular_mpm.probing_dataset import (  # noqa: E402
+    build_probing_dataset,
+    load_blade_wrench_csv,
+    load_bridge_npz,
+    probing_dataset_metrics,
+    write_dataset_npz,
+)
+from granular_mpm.workspace import scan_workspace  # noqa: E402
 
 
 DEFAULT_CONFIG = ROOT / "configs" / "experiments" / "reference_heightfield_intrusion.json"
@@ -36,6 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sequence-name", default=None)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--skip-bridge", action="store_true")
+    parser.add_argument("--skip-training", action="store_true")
     parser.add_argument("--metrics-only", action="store_true")
     return parser.parse_args()
 
@@ -197,6 +206,104 @@ def stage_bridge(
     return {"enabled": True, "run_dir": out_dir, "videos": videos, "logs": logs}
 
 
+def stage_probing_dataset(config: dict[str, Any], layout: dict[str, Path], quick: bool) -> dict[str, Any]:
+    dataset_cfg = config.get("dataset", {})
+    if not dataset_cfg.get("enabled", True):
+        return {"enabled": False}
+
+    sources = []
+    blade_csv = layout["runs"] / "blade_demo" / "wrench_log.csv"
+    bridge_log = layout["runs"] / "newton_bridge" / "newton_mpm_bridge_log.npz"
+    if blade_csv.exists():
+        sources.append(load_blade_wrench_csv(blade_csv, name="blade_demo"))
+    if bridge_log.exists():
+        sources.append(
+            load_bridge_npz(
+                bridge_log,
+                name="newton_bridge",
+                frame_rate_hz=float(dataset_cfg.get("bridge_frame_rate_hz", 30.0)),
+            )
+        )
+
+    targets = dict(dataset_cfg.get("targets", {"phi_deg": 34.0, "cohesion_kpa": 0.0}))
+    window_length = int(dataset_cfg.get("window_length", 32))
+    stride = int(dataset_cfg.get("stride", 8))
+    if quick:
+        window_length = int(dataset_cfg.get("quick_window_length", min(4, window_length)))
+        stride = int(dataset_cfg.get("quick_stride", 1))
+
+    dataset = build_probing_dataset(
+        sources=sources,
+        targets=targets,
+        sample_rate_hz=float(dataset_cfg.get("sample_rate_hz", 50.0)),
+        window_length=window_length,
+        stride=stride,
+        normalization=str(dataset_cfg.get("normalization", "zscore")),
+        train_fraction=float(dataset_cfg.get("train_fraction", config.get("metrics", {}).get("train_fraction", 0.7))),
+        validation_fraction=float(dataset_cfg.get("validation_fraction", 0.15)),
+        seed=int(dataset_cfg.get("seed", config.get("learning", {}).get("seed", 7))),
+    )
+    dataset_dir = layout["runs"] / "probing_dataset"
+    dataset_path = dataset_dir / "probing_windows.npz"
+    write_dataset_npz(dataset_path, dataset)
+    tensor_metrics = probing_dataset_metrics(dataset)
+    dump_json(layout["dataset_metrics"] / "probing_tensor_metrics.json", tensor_metrics)
+    dump_json(
+        layout["dataset_metrics"] / "normalization_stats.json",
+        dataset["metadata"].get("normalization_stats", {"method": dataset_cfg.get("normalization", "zscore")}),
+    )
+    return {
+        "enabled": True,
+        "dataset_path": dataset_path,
+        "sample_count": int(dataset["x"].shape[0]),
+        "metrics_path": layout["dataset_metrics"] / "probing_tensor_metrics.json",
+        "status": tensor_metrics["status"],
+    }
+
+
+def stage_learning(
+    config: dict[str, Any],
+    layout: dict[str, Path],
+    dataset_info: dict[str, Any],
+    resolved_config: Path,
+    quick: bool,
+    skip_training: bool,
+    metrics_only: bool,
+) -> dict[str, Any]:
+    learning_cfg = config.get("learning", {})
+    if skip_training or metrics_only or not learning_cfg.get("enabled", True):
+        return {"enabled": False, "skipped": bool(skip_training or metrics_only)}
+    dataset_path = dataset_info.get("dataset_path")
+    if not dataset_path or int(dataset_info.get("sample_count", 0)) == 0:
+        return {"enabled": False, "skipped": True, "reason": "empty_dataset"}
+
+    cmd = [
+        sys.executable,
+        "scripts/train_granular_inference.py",
+        "--dataset",
+        Path(dataset_path).as_posix(),
+        "--training-dir",
+        layout["training_metrics"].as_posix(),
+        "--inference-dir",
+        layout["inference_results"].as_posix(),
+        "--config",
+        resolved_config.as_posix(),
+        "--sequence-name",
+        config["sequence_name"],
+    ]
+    if quick:
+        cmd.append("--quick")
+    run_cmd(cmd, layout["logs"] / "learning.log")
+    return {
+        "enabled": True,
+        "training_metrics": layout["training_metrics"] / "mdn_training_metrics.json",
+        "representation_metrics": layout["training_metrics"] / "representation_metrics.json",
+        "model": layout["training_metrics"] / "temporal_mdn.pt",
+        "inference_metrics": layout["inference_results"] / "learning_inference_metrics.json",
+        "predictions": layout["inference_results"] / "mdn_predictions.csv",
+    }
+
+
 def compute_metrics(config: dict[str, Any], layout: dict[str, Path], stages: dict[str, Any]) -> dict[str, Any]:
     video_paths = sorted(layout["videos"].glob("*/*.mp4"))
     video_payload = {"videos": [video_metrics(path) for path in video_paths]}
@@ -288,25 +395,45 @@ def main() -> None:
     ensure_layout(layout)
 
     dump_json(layout["config"] / "source_experiment_config.json", load_json(args.config))
-    dump_json(layout["config"] / "resolved_experiment_config.json", config)
+    resolved_config = layout["config"] / "resolved_experiment_config.json"
+    dump_json(resolved_config, config)
     dump_json(layout["config"] / "git_info.json", git_info())
+    dump_json(
+        layout["config"] / "workspace_scan.json",
+        scan_workspace(ROOT, max_depth=int(config.get("workspace", {}).get("scan_depth", 2))),
+    )
 
     stages = {
         "density_render": stage_density(config, layout, args.quick, args.metrics_only),
         "blade_demo": stage_blade(config, layout, args.quick, args.metrics_only),
         "newton_bridge": stage_bridge(config, layout, args.quick, args.skip_bridge, args.metrics_only),
     }
+    dataset_info = stage_probing_dataset(config, layout, args.quick)
     metrics = compute_metrics(config, layout, stages)
+    learning_info = stage_learning(
+        config=config,
+        layout=layout,
+        dataset_info=dataset_info,
+        resolved_config=resolved_config,
+        quick=args.quick,
+        skip_training=args.skip_training,
+        metrics_only=args.metrics_only,
+    )
     manifest = {
         "sequence_name": sequence_name,
         "root": layout["root"].as_posix(),
         "folders": {key: path.as_posix() for key, path in layout.items() if key != "root"},
         "stages": compact_stage_status(stages),
+        "probing_dataset": dataset_info,
+        "learning": learning_info,
         "metrics": {
             "dataset_summary": (layout["dataset_metrics"] / "dataset_summary.json").as_posix(),
             "video_metrics": (layout["dataset_metrics"] / "video_metrics.json").as_posix(),
+            "probing_tensor_metrics": (layout["dataset_metrics"] / "probing_tensor_metrics.json").as_posix(),
             "training_metrics": (layout["training_metrics"] / "baseline_force_model.json").as_posix(),
+            "learning_training_metrics": (layout["training_metrics"] / "mdn_training_metrics.json").as_posix(),
             "inference_metrics": (layout["inference_results"] / "inference_metrics.json").as_posix(),
+            "learning_inference_metrics": (layout["inference_results"] / "learning_inference_metrics.json").as_posix(),
         },
         "summary": metrics,
     }

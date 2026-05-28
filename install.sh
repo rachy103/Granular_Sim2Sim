@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
 ENV_DIR="${ENV_DIR:-.venv}"
-EXTRAS="${EXTRAS:-mujoco,newton,dev}"
+EXTRAS="${EXTRAS:-mujoco,newton,learning,dev}"
 MENAGERIE_REPO="${MENAGERIE_REPO:-https://github.com/google-deepmind/mujoco_menagerie.git}"
 MENAGERIE_REF="${MENAGERIE_REF:-b846dd12bc459d776cccb3dee0b1d02acbf7a9c7}"
 MENAGERIE_DIR="${MENAGERIE_DIR:-mujoco_menagerie}"
@@ -19,7 +19,7 @@ Usage: ./install.sh [options]
 
 Options:
   --env-dir PATH       Python virtualenv path (default: .venv)
-  --extras LIST        pip extras to install (default: mujoco,newton,dev)
+  --extras LIST        pip extras to install (default: mujoco,newton,learning,dev)
   --lite               install only the compact Warp demo dependencies
   --locked             constrain package versions to the tested reference lock
   --no-menagerie       skip downloading google-deepmind/mujoco_menagerie
@@ -32,7 +32,7 @@ Examples:
   ./install.sh
   ./install.sh --locked
   ./install.sh --lite --smoke
-  ENV_DIR=/tmp/granular-venv ./install.sh --extras mujoco,newton,dev
+  ENV_DIR=/tmp/granular-venv ./install.sh --extras mujoco,newton,learning,dev
 EOF
 }
 
@@ -104,15 +104,19 @@ source "$ENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip setuptools wheel
 PIP_CONSTRAINT_ARGS=()
+PIP_INDEX_ARGS=()
 if [[ "$USE_LOCK" -eq 1 ]]; then
   if [[ ! -f "$LOCK_FILE" ]]; then
     echo "Lock file not found: $LOCK_FILE" >&2
     exit 1
   fi
   PIP_CONSTRAINT_ARGS=(-c "$LOCK_FILE")
+  if [[ ",$EXTRAS," == *",learning,"* ]]; then
+    PIP_INDEX_ARGS=(--extra-index-url https://download.pytorch.org/whl/cu128)
+  fi
 fi
 if [[ -n "$EXTRAS" ]]; then
-  python -m pip install "${PIP_CONSTRAINT_ARGS[@]}" -e ".[$EXTRAS]"
+  python -m pip install "${PIP_CONSTRAINT_ARGS[@]}" "${PIP_INDEX_ARGS[@]}" -e ".[$EXTRAS]"
 else
   python -m pip install "${PIP_CONSTRAINT_ARGS[@]}" -e .
 fi
@@ -142,7 +146,7 @@ python - <<'PY'
 import importlib
 
 required = ["numpy", "cv2", "warp", "granular_mpm"]
-optional = ["mujoco", "newton"]
+optional = ["mujoco", "newton", "torch"]
 
 for name in required:
     mod = importlib.import_module(name)
