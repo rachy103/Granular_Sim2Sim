@@ -75,6 +75,7 @@ For a quick CPU-oriented check:
 ```bash
 make experiment-smoke
 make pipeline-smoke
+make sweep-smoke
 ```
 
 Each sequence writes a fixed layout under `outputs/experiments/<sequence_name>/`:
@@ -99,6 +100,17 @@ Gaussian decoder.
 
 See `docs/experiment_pipeline.md` for the full wrapper contract.
 
+For amortized inference data generation, run a Latin-hypercube sweep over
+material and action nuisance variables:
+
+```bash
+python scripts/run_property_sweep.py --config configs/sweeps/lhs_property_sweep.json
+```
+
+The sweep writes `outputs/sweeps/<sweep_name>/samples.csv`, per-sample sequence
+folders, one globally normalized aggregate tensor dataset, aggregate training
+metrics, and aggregate inference results.
+
 ## Artifact Policy
 
 Large files are treated as reproducible artifacts, not source. The repo does not
@@ -115,7 +127,7 @@ python scripts/package_demo_artifacts.py
 ```
 
 This writes `dist/granular-robot-demo-artifacts-<git-sha>.zip` with videos,
-previews, logs, configs, and a SHA-256 manifest. Experiment sequence outputs and
+previews, logs, configs, and a SHA-256 manifest. Experiment/sweep outputs and
 very large Newton USD/PLY files are excluded by default; include them explicitly
 when needed:
 

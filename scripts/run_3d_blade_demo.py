@@ -24,7 +24,35 @@ def smoothstep(x: float) -> float:
     return x * x * (3.0 - 2.0 * x)
 
 
-def blade_pose(time: float) -> tuple[np.ndarray, float]:
+def default_trajectory() -> dict[str, float]:
+    return {
+        "speed_scale": 1.0,
+        "time_offset": 0.0,
+        "x_offset": 0.0,
+        "y_offset": 0.0,
+        "z_offset": 0.0,
+        "depth_scale": 1.0,
+        "drag_distance_scale": 1.0,
+        "angle_offset": 0.0,
+        "angle_scale": 1.0,
+        "blade_half_x_scale": 1.0,
+        "blade_half_y_scale": 1.0,
+        "blade_half_z_scale": 1.0,
+    }
+
+
+def trajectory_from_config(raw: dict | None) -> dict[str, float]:
+    params = default_trajectory()
+    if raw:
+        for key, value in raw.items():
+            if key in params:
+                params[key] = float(value)
+    return params
+
+
+def blade_pose(time: float, trajectory: dict[str, float] | None = None) -> tuple[np.ndarray, float]:
+    params = trajectory or default_trajectory()
+    time = (time + params["time_offset"]) * params["speed_scale"]
     if time < 0.22:
         u = smoothstep(time / 0.22)
         center = np.array([0.25 + 0.10 * u, 0.280, 0.405 - 0.105 * u], dtype=np.float32)
@@ -48,18 +76,32 @@ def blade_pose(time: float) -> tuple[np.ndarray, float]:
         u = smoothstep(min((time - 1.42) / 0.36, 1.0))
         center = np.array([0.745 + 0.035 * u, 0.280, 0.220 + 0.150 * u], dtype=np.float32)
         angle = -0.31
+    anchor = np.array([0.25, 0.280, 0.405], dtype=np.float32)
+    center[0] = anchor[0] + (center[0] - anchor[0]) * params["drag_distance_scale"] + params["x_offset"]
+    center[1] = center[1] + params["y_offset"]
+    center[2] = anchor[2] + (center[2] - anchor[2]) * params["depth_scale"] + params["z_offset"]
+    angle = angle * params["angle_scale"] + params["angle_offset"]
     return center, float(angle)
 
 
-def blade_state(time: float, dt: float) -> ToolState3D:
-    center0, angle0 = blade_pose(time)
-    center1, angle1 = blade_pose(time + dt)
+def blade_state(time: float, dt: float, trajectory: dict[str, float] | None = None) -> ToolState3D:
+    params = trajectory or default_trajectory()
+    center0, angle0 = blade_pose(time, params)
+    center1, angle1 = blade_pose(time + dt, params)
+    half = np.array(
+        [
+            0.082 * params["blade_half_x_scale"],
+            0.122 * params["blade_half_y_scale"],
+            0.015 * params["blade_half_z_scale"],
+        ],
+        dtype=np.float32,
+    )
     return ToolState3D(
         center=center0,
         velocity=((center1 - center0) / max(dt, 1.0e-6)).astype(np.float32),
         angle=angle0,
         angular_velocity=float((angle1 - angle0) / max(dt, 1.0e-6)),
-        half=np.array([0.082, 0.122, 0.015], dtype=np.float32),
+        half=half,
     )
 
 
@@ -85,6 +127,7 @@ def run(config_path: Path) -> None:
     substeps = int(cfg.get("substeps_per_frame", 36))
     fps = int(cfg.get("fps", 30))
     display_force_scale = float(cfg.get("display_force_scale", 0.0012))
+    trajectory = trajectory_from_config(cfg.get("trajectory", {}))
 
     print(
         f"3D MPM demo particles={solver.n_particles} grid=72x40x48 "
@@ -95,12 +138,12 @@ def run(config_path: Path) -> None:
     force_history: list[float] = []
     rows: list[dict[str, float]] = []
     sim_t = 0.0
-    last_tool = blade_state(0.0, mpm_cfg.dt)
+    last_tool = blade_state(0.0, mpm_cfg.dt, trajectory)
 
     for frame_id in range(frames_n):
         raw_wrench = np.zeros(6, dtype=np.float32)
         for _ in range(substeps):
-            tool = blade_state(sim_t, mpm_cfg.dt)
+            tool = blade_state(sim_t, mpm_cfg.dt, trajectory)
             raw_wrench += solver.step(tool, substeps=1)
             sim_t += mpm_cfg.dt
             last_tool = tool
@@ -128,6 +171,10 @@ def run(config_path: Path) -> None:
                 "display_force_norm": float(np.linalg.norm(display_wrench[:3])),
                 "z_min": float(pos[:, 2].min()),
                 "z_max": float(pos[:, 2].max()),
+                "trajectory_speed_scale": float(trajectory["speed_scale"]),
+                "trajectory_depth_scale": float(trajectory["depth_scale"]),
+                "trajectory_angle_offset": float(trajectory["angle_offset"]),
+                "trajectory_drag_distance_scale": float(trajectory["drag_distance_scale"]),
             }
         )
         if frame_id % 10 == 0:
@@ -158,7 +205,7 @@ def run(config_path: Path) -> None:
         wrench_log_columns=np.asarray(list(rows[0].keys())),
     )
     with config_copy.open("w", encoding="utf-8") as f:
-        json.dump({"mpm": asdict(mpm_cfg), **{k: v for k, v in cfg.items() if k != "mpm"}}, f, indent=2)
+        json.dump({"mpm": asdict(mpm_cfg), "trajectory": trajectory, **{k: v for k, v in cfg.items() if k not in {"mpm", "trajectory"}}}, f, indent=2)
 
     print(f"video={video_path}")
     print(f"preview={preview_path}")

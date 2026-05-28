@@ -21,6 +21,7 @@ class SandMPM3DConfig:
     young: float = 2.2e3
     poisson: float = 0.24
     dp_alpha: float = 0.42
+    cohesion: float = 0.0
     gravity: float = -1.35
     tool_mu: float = 0.44
     max_grid_speed: float = 1.3
@@ -118,6 +119,7 @@ def p2g_kernel_3d(
     mu0: float,
     lam0: float,
     dp_alpha: float,
+    cohesion: float,
 ):
     p = wp.tid()
     xp = x[p]
@@ -149,7 +151,7 @@ def p2g_kernel_3d(
         e1 = 0.0
         e2 = 0.0
     else:
-        yield_value = dev_norm + dp_alpha * tr
+        yield_value = dev_norm + dp_alpha * tr - cohesion
         if yield_value > 0.0 and dev_norm > 1.0e-8:
             scale = wp.max(0.0, -dp_alpha * tr) / dev_norm
             e0 = mean + d0 * scale
@@ -435,6 +437,7 @@ class SandMPM3D:
                     self.mu0,
                     self.lam0,
                     cfg.dp_alpha,
+                    cfg.cohesion,
                 ],
                 device=self.device,
             )

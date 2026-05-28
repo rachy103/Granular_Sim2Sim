@@ -251,6 +251,7 @@ def normalize_windows(windows: np.ndarray, split: np.ndarray, method: str = "zsc
 
 def write_dataset_npz(path: Path, dataset: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    sequence_index = dataset.get("sequence_index", np.zeros_like(dataset["source_index"], dtype=np.int32))
     np.savez_compressed(
         path,
         x=dataset["x"],
@@ -258,6 +259,7 @@ def write_dataset_npz(path: Path, dataset: dict[str, Any]) -> None:
         y=dataset["y"],
         split=dataset["split"],
         source_index=dataset["source_index"],
+        sequence_index=sequence_index,
         window_start=dataset["window_start"],
         metadata=np.asarray(json.dumps(dataset["metadata"], indent=2)),
     )
@@ -271,6 +273,9 @@ def load_dataset_npz(path: Path) -> dict[str, Any]:
         "y": np.asarray(data["y"], dtype=np.float32),
         "split": np.asarray(data["split"], dtype=np.int32),
         "source_index": np.asarray(data["source_index"], dtype=np.int32),
+        "sequence_index": np.asarray(data["sequence_index"], dtype=np.int32)
+        if "sequence_index" in data
+        else np.asarray(data["source_index"], dtype=np.int32),
         "window_start": np.asarray(data["window_start"], dtype=np.int32),
         "metadata": json.loads(str(data["metadata"].item())),
     }
@@ -295,6 +300,7 @@ def probing_dataset_metrics(dataset: dict[str, Any]) -> dict[str, Any]:
         "feature_mean": _stats_by_last_dim(x, "mean"),
         "feature_std": _stats_by_last_dim(x, "std"),
         "targets": meta.get("targets", {}),
+        "target_stats": meta.get("target_stats", _target_stats(y, meta.get("target_names", DEFAULT_TARGET_NAMES))),
         "sources": meta.get("sources", []),
     }
 
@@ -320,3 +326,18 @@ def _stats_by_last_dim(values: np.ndarray, op: str) -> dict[str, float | None]:
     else:
         raise ValueError(op)
     return {FEATURE_NAMES[i]: float(arr[i]) for i in range(len(FEATURE_NAMES))}
+
+
+def _target_stats(values: np.ndarray, names: list[str]) -> dict[str, dict[str, float | None]]:
+    y = np.asarray(values, dtype=np.float32)
+    if y.size == 0:
+        return {name: {"min": None, "max": None, "mean": None, "std": None} for name in names}
+    return {
+        names[i]: {
+            "min": float(y[:, i].min()),
+            "max": float(y[:, i].max()),
+            "mean": float(y[:, i].mean()),
+            "std": float(y[:, i].std()),
+        }
+        for i in range(min(len(names), y.shape[1]))
+    }

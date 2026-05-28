@@ -1,0 +1,45 @@
+{
+  "sweep_name": "lhs_phi_cohesion_action_v001",
+  "description": "Latin-hypercube sweep over granular material labels and probing trajectory nuisance variables.",
+  "base_experiment_config": "configs/experiments/reference_heightfield_intrusion.json",
+  "output_root": "outputs/sweeps",
+  "count": 64,
+  "seed": 11,
+  "run_density": false,
+  "run_bridge": false,
+  "normalization": "zscore",
+  "train_fraction": 0.7,
+  "validation_fraction": 0.15,
+  "ranges": {
+    "phi_deg": [25.0, 45.0],
+    "cohesion_kpa": [0.0, 15.0],
+    "speed_scale": [0.82, 1.22],
+    "depth_scale": [0.88, 1.14],
+    "drag_distance_scale": [0.90, 1.12],
+    "angle_offset": [-0.12, 0.12],
+    "y_offset": [-0.018, 0.018],
+    "z_offset": [-0.012, 0.008]
+  },
+  "material_mapping": {
+    "dp_alpha_scale": 1.0,
+    "cohesion_kpa_to_mpm": 0.004,
+    "tool_mu_scale": 0.58,
+    "young_base": 1800.0,
+    "young_per_kpa": 45.0,
+    "newton_friction_scale": 1.0,
+    "yield_pressure_base": 750000.0,
+    "yield_pressure_per_kpa": 45000.0,
+    "newton_young_base": 800000.0,
+    "newton_young_per_kpa": 25000.0
+  },
+  "learning": {
+    "representation_epochs": 10,
+    "mdn_epochs": 24,
+    "batch_size": 64,
+    "quick_representation_epochs": 1,
+    "quick_mdn_epochs": 1,
+    "quick_batch_size": 8,
+    "num_mixtures": 3,
+    "timing_repeats": 20
+  }
+}
