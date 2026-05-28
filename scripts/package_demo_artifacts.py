@@ -49,6 +49,10 @@ EXPERIMENT_PATTERNS = [
     "outputs/sweeps/*/inference_results/*.json",
     "outputs/sweeps/*/inference_results/*.csv",
     "outputs/sweeps/*/inference_results/*.png",
+    "outputs/sweeps/*/analysis/*.csv",
+    "outputs/sweeps/*/analysis/*.json",
+    "outputs/sweeps/*/analysis/*.md",
+    "outputs/sweeps/*/analysis/*.png",
 ]
 
 HEAVY_PATTERNS = [
@@ -63,7 +67,8 @@ REPRO_COMMANDS = [
     "python scripts/run_3d_density_render_demo.py",
     "python scripts/run_3d_blade_demo.py --config configs/sand3d_blade_demo.json",
     "python scripts/run_experiment_sequence.py --quick --skip-bridge",
-    "python scripts/run_property_sweep.py --quick --skip-bridge --count 2",
+    "python scripts/run_property_sweep.py --quick --skip-bridge --count 2 --actions-per-material 1",
+    "python scripts/analyze_sweep_scatter.py --sweep-root outputs/sweeps/smoke_lhs_sweep",
     (
         "python scripts/run_mujoco_newton_mpm_bridge.py --voxel-size 0.032 "
         "--particles-per-cell 3.0 --sand-render-mode heightfield "

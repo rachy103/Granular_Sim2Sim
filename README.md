@@ -111,6 +111,16 @@ The sweep writes `outputs/sweeps/<sweep_name>/samples.csv`, per-sample sequence
 folders, one globally normalized aggregate tensor dataset, aggregate training
 metrics, and aggregate inference results.
 
+Inspect whether material labels actually separate the force traces:
+
+```bash
+python scripts/analyze_sweep_scatter.py --sweep-root outputs/sweeps/<sweep_name>
+```
+
+The default sweep uses a paired material-action design: multiple action
+variations are repeated for each sampled material, and aggregate train/test
+splits are grouped by material.
+
 ## Artifact Policy
 
 Large files are treated as reproducible artifacts, not source. The repo does not

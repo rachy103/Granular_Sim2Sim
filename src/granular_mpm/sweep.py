@@ -35,6 +35,31 @@ def latin_hypercube(ranges: dict[str, list[float]], count: int, seed: int = 7) -
     return samples
 
 
+def paired_lhs_samples(
+    material_ranges: dict[str, list[float]],
+    action_ranges: dict[str, list[float]],
+    material_count: int,
+    actions_per_material: int,
+    seed: int = 7,
+) -> list[dict[str, float]]:
+    materials = latin_hypercube(material_ranges, material_count, seed=seed)
+    samples: list[dict[str, float]] = []
+    for material_id, material in enumerate(materials):
+        actions = latin_hypercube(action_ranges, actions_per_material, seed=seed + 1009 + material_id)
+        if not actions:
+            actions = [{}]
+        for action_id, action in enumerate(actions):
+            samples.append(
+                {
+                    "material_id": float(material_id),
+                    "action_id": float(action_id),
+                    **material,
+                    **action,
+                }
+            )
+    return samples
+
+
 def dp_alpha_from_phi(phi_deg: float, scale: float = 1.0) -> float:
     sin_phi = math.sin(math.radians(float(phi_deg)))
     alpha = 2.0 * sin_phi / (math.sqrt(3.0) * (3.0 - sin_phi))
@@ -126,10 +151,12 @@ def aggregate_dataset_npz(
     train_fraction: float = 0.7,
     validation_fraction: float = 0.15,
     seed: int = 7,
+    group_ids_by_dataset: list[int] | None = None,
 ) -> dict[str, Any]:
     windows: list[np.ndarray] = []
     labels: list[np.ndarray] = []
     sequence_index: list[np.ndarray] = []
+    material_index: list[np.ndarray] = []
     source_metadata: list[dict[str, Any]] = []
     target_names: list[str] | None = None
     sample_rate_hz = None
@@ -153,6 +180,8 @@ def aggregate_dataset_npz(
         windows.append(x_raw)
         labels.append(y)
         sequence_index.append(np.full((x_raw.shape[0],), seq_id, dtype=np.int32))
+        group_id = group_ids_by_dataset[seq_id] if group_ids_by_dataset and seq_id < len(group_ids_by_dataset) else seq_id
+        material_index.append(np.full((x_raw.shape[0],), int(group_id), dtype=np.int32))
         source_metadata.append(
             {
                 "dataset_path": path.as_posix(),
@@ -166,14 +195,16 @@ def aggregate_dataset_npz(
         x_raw_all = np.concatenate(windows, axis=0).astype(np.float32)
         y_all = np.concatenate(labels, axis=0).astype(np.float32)
         seq_all = np.concatenate(sequence_index, axis=0).astype(np.int32)
+        mat_all = np.concatenate(material_index, axis=0).astype(np.int32)
     else:
         target_names = target_names or ["phi_deg", "cohesion_kpa"]
         x_raw_all = np.zeros((0, int(window_length or 1), len(FEATURE_NAMES)), dtype=np.float32)
         y_all = np.zeros((0, len(target_names)), dtype=np.float32)
         seq_all = np.zeros((0,), dtype=np.int32)
+        mat_all = np.zeros((0,), dtype=np.int32)
 
     split = make_group_splits(
-        seq_all,
+        mat_all,
         train_fraction=train_fraction,
         validation_fraction=validation_fraction,
         seed=seed,
@@ -186,6 +217,7 @@ def aggregate_dataset_npz(
         "split": split,
         "source_index": seq_all,
         "sequence_index": seq_all,
+        "material_index": mat_all,
         "window_start": np.zeros((x_raw_all.shape[0],), dtype=np.int32),
         "metadata": {
             "sample_rate_hz": sample_rate_hz,
@@ -195,6 +227,7 @@ def aggregate_dataset_npz(
             "feature_names": list(FEATURE_NAMES),
             "target_names": target_names,
             "target_stats": _target_stats(y_all, target_names or []),
+            "split_group": "material_id",
             "source_count": len(source_metadata),
             "sources": source_metadata,
             "normalization_stats": norm_stats,

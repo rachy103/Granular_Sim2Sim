@@ -7,6 +7,7 @@ from granular_mpm.sweep import (
     dp_alpha_from_phi,
     latin_hypercube,
     make_group_splits,
+    paired_lhs_samples,
     sample_to_material_controls,
 )
 
@@ -46,3 +47,18 @@ def test_group_splits_keep_sequence_windows_together() -> None:
     split = make_group_splits(group_ids, train_fraction=0.5, validation_fraction=0.25, seed=4)
     for group in np.unique(group_ids):
         assert np.unique(split[group_ids == group]).size == 1
+
+
+def test_paired_lhs_repeats_actions_for_each_material() -> None:
+    samples = paired_lhs_samples(
+        material_ranges={"phi_deg": [25.0, 45.0], "cohesion_kpa": [0.0, 15.0]},
+        action_ranges={"speed_scale": [0.8, 1.2]},
+        material_count=3,
+        actions_per_material=2,
+        seed=5,
+    )
+    assert len(samples) == 6
+    material_ids = [int(sample["material_id"]) for sample in samples]
+    assert material_ids.count(0) == 2
+    assert material_ids.count(1) == 2
+    assert material_ids.count(2) == 2

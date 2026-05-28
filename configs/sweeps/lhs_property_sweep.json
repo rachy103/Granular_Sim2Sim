@@ -3,16 +3,20 @@
   "description": "Latin-hypercube sweep over granular material labels and probing trajectory nuisance variables.",
   "base_experiment_config": "configs/experiments/reference_heightfield_intrusion.json",
   "output_root": "outputs/sweeps",
-  "count": 64,
+  "design": "paired_lhs",
+  "count": 32,
+  "actions_per_material": 3,
   "seed": 11,
   "run_density": false,
   "run_bridge": false,
   "normalization": "zscore",
   "train_fraction": 0.7,
   "validation_fraction": 0.15,
-  "ranges": {
+  "material_ranges": {
     "phi_deg": [25.0, 45.0],
-    "cohesion_kpa": [0.0, 15.0],
+    "cohesion_kpa": [0.0, 15.0]
+  },
+  "action_ranges": {
     "speed_scale": [0.82, 1.22],
     "depth_scale": [0.88, 1.14],
     "drag_distance_scale": [0.90, 1.12],

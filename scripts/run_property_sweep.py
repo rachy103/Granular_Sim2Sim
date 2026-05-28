@@ -19,6 +19,7 @@ from granular_mpm.sweep import (  # noqa: E402
     aggregate_dataset_npz,
     apply_sample_to_config,
     latin_hypercube,
+    paired_lhs_samples,
     sample_to_material_controls,
     sample_to_newton_controls,
     sample_to_trajectory,
@@ -34,6 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--sweep-name", default=None)
     parser.add_argument("--count", type=int, default=None)
+    parser.add_argument("--actions-per-material", type=int, default=None)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--skip-bridge", action="store_true")
     parser.add_argument("--train-per-sequence", action="store_true")
@@ -94,6 +96,26 @@ def make_layout(output_root: str, sweep_name: str) -> dict[str, Path]:
 def ensure_layout(layout: dict[str, Path]) -> None:
     for path in layout.values():
         path.mkdir(parents=True, exist_ok=True)
+
+
+def make_samples(sweep_cfg: dict[str, Any], count: int, actions_per_material: int | None) -> list[dict[str, float]]:
+    seed = int(sweep_cfg.get("seed", 7))
+    design = str(sweep_cfg.get("design", "lhs"))
+    if design == "paired_lhs":
+        material_ranges = dict(sweep_cfg.get("material_ranges", {}))
+        action_ranges = dict(sweep_cfg.get("action_ranges", {}))
+        if not material_ranges:
+            ranges = dict(sweep_cfg.get("ranges", {}))
+            material_ranges = {key: ranges[key] for key in ["phi_deg", "cohesion_kpa"] if key in ranges}
+            action_ranges = {key: value for key, value in ranges.items() if key not in material_ranges}
+        return paired_lhs_samples(
+            material_ranges=material_ranges,
+            action_ranges=action_ranges,
+            material_count=count,
+            actions_per_material=int(actions_per_material or sweep_cfg.get("actions_per_material", 3)),
+            seed=seed,
+        )
+    return latin_hypercube(dict(sweep_cfg.get("ranges", {})), count=count, seed=seed)
 
 
 def disable_unneeded_stages(config: dict[str, Any], sweep_cfg: dict[str, Any]) -> None:
@@ -200,7 +222,7 @@ def main() -> None:
 
     base_config_path = ROOT / sweep_cfg.get("base_experiment_config", "configs/experiments/reference_heightfield_intrusion.json")
     base_config = load_json(base_config_path)
-    samples = latin_hypercube(dict(sweep_cfg.get("ranges", {})), count=count, seed=int(sweep_cfg.get("seed", 7)))
+    samples = make_samples(sweep_cfg, count=count, actions_per_material=args.actions_per_material)
     write_json(layout["configs"] / "source_sweep_config.json", sweep_cfg)
     write_json(layout["configs"] / "resolved_sweep_config.json", {**sweep_cfg, "sweep_name": sweep_name, "count": count})
 
@@ -224,6 +246,7 @@ def main() -> None:
         train_fraction=float(sweep_cfg.get("train_fraction", base_config.get("metrics", {}).get("train_fraction", 0.7))),
         validation_fraction=float(sweep_cfg.get("validation_fraction", 0.15)),
         seed=int(sweep_cfg.get("seed", 7)),
+        group_ids_by_dataset=[int(record.get("material_id", record["sample_id"])) for record in records],
     )
 
     learning_info = {"enabled": False}
@@ -240,7 +263,10 @@ def main() -> None:
     manifest = {
         "sweep_name": sweep_name,
         "root": layout["root"].as_posix(),
-        "count": count,
+        "design": str(sweep_cfg.get("design", "lhs")),
+        "material_count": count,
+        "actions_per_material": int(args.actions_per_material or sweep_cfg.get("actions_per_material", 1)),
+        "sample_count": len(records),
         "sample_csv": (layout["root"] / "samples.csv").as_posix(),
         "aggregate_dataset": aggregate["path"].as_posix(),
         "aggregate_metrics": (layout["dataset"] / "aggregate_dataset_metrics.json").as_posix(),

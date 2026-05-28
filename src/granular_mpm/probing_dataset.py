@@ -252,6 +252,7 @@ def normalize_windows(windows: np.ndarray, split: np.ndarray, method: str = "zsc
 def write_dataset_npz(path: Path, dataset: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     sequence_index = dataset.get("sequence_index", np.zeros_like(dataset["source_index"], dtype=np.int32))
+    material_index = dataset.get("material_index", sequence_index)
     np.savez_compressed(
         path,
         x=dataset["x"],
@@ -260,6 +261,7 @@ def write_dataset_npz(path: Path, dataset: dict[str, Any]) -> None:
         split=dataset["split"],
         source_index=dataset["source_index"],
         sequence_index=sequence_index,
+        material_index=material_index,
         window_start=dataset["window_start"],
         metadata=np.asarray(json.dumps(dataset["metadata"], indent=2)),
     )
@@ -276,6 +278,13 @@ def load_dataset_npz(path: Path) -> dict[str, Any]:
         "sequence_index": np.asarray(data["sequence_index"], dtype=np.int32)
         if "sequence_index" in data
         else np.asarray(data["source_index"], dtype=np.int32),
+        "material_index": np.asarray(data["material_index"], dtype=np.int32)
+        if "material_index" in data
+        else (
+            np.asarray(data["sequence_index"], dtype=np.int32)
+            if "sequence_index" in data
+            else np.asarray(data["source_index"], dtype=np.int32)
+        ),
         "window_start": np.asarray(data["window_start"], dtype=np.int32),
         "metadata": json.loads(str(data["metadata"].item())),
     }
