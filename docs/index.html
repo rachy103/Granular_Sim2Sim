@@ -28,7 +28,8 @@
       }
       header {
         border-bottom: 1px solid var(--line);
-        background: #ffffff;
+        background: #101415;
+        color: #f4f6f4;
       }
       .wrap {
         max-width: 1160px;
@@ -63,6 +64,28 @@
       .lede {
         max-width: 880px;
         font-size: 17px;
+        color: #c5cdca;
+      }
+      .hero-media {
+        margin-top: 22px;
+      }
+      .hero-media video {
+        display: block;
+        width: 100%;
+        background: #050606;
+        border: 1px solid #2d3436;
+      }
+      .hero-caption {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: baseline;
+        padding: 10px 0 0;
+        color: #c5cdca;
+        font-size: 14px;
+      }
+      .hero-caption strong {
+        color: #ffffff;
       }
       .metrics {
         display: grid;
@@ -71,8 +94,8 @@
         margin-top: 22px;
       }
       .metric {
-        border: 1px solid var(--line);
-        background: var(--panel);
+        border: 1px solid #2d3436;
+        background: #181e1f;
         padding: 14px 16px;
       }
       .metric strong {
@@ -81,8 +104,15 @@
         line-height: 1.1;
       }
       .metric span {
-        color: var(--muted);
+        color: #aeb8b5;
         font-size: 13px;
+      }
+      main .metrics .metric {
+        border-color: var(--line);
+        background: var(--panel);
+      }
+      main .metrics .metric span {
+        color: var(--muted);
       }
       .grid {
         display: grid;
@@ -146,6 +176,9 @@
         h1 {
           font-size: 28px;
         }
+        .hero-caption {
+          display: block;
+        }
       }
     </style>
   </head>
@@ -159,6 +192,21 @@
           crunching debris under held-out actions, held-out materials, and
           sensor/vision corruptions.
         </p>
+        <div class="hero-media">
+          <video
+            src="assets/videos/excavation_policy_compare.mp4?v=h264-hero"
+            poster="assets/posters/excavation_policy_compare.jpg?v=h264-hero"
+            controls
+            muted
+            loop
+            playsinline
+            preload="auto"
+          ></video>
+          <div class="hero-caption">
+            <strong>Featured result: property-aware excavation beats a fixed no-model plan.</strong>
+            <span>H.264 encoded for browser playback.</span>
+          </div>
+        </div>
         <div class="metrics" aria-label="Stress benchmark headline metrics">
           <div class="metric"><strong>0.931</strong><span>family accuracy</span></div>
           <div class="metric"><strong>0.877</strong><span>worst-family accuracy</span></div>
@@ -220,31 +268,24 @@
         </div>
       </div>
 
-      <h2>Policy And Sim2Sim Videos</h2>
+      <h2>Additional Videos</h2>
       <div class="grid">
         <figure>
-          <video src="assets/videos/excavation_policy_compare.mp4" controls muted playsinline preload="metadata"></video>
-          <figcaption>
-            Fixed no-model excavation versus property-aware excavation using
-            the estimated posterior.
-          </figcaption>
-        </figure>
-        <figure>
-          <video src="assets/videos/density_mujoco_eef_property_overlay.mp4" controls muted playsinline preload="metadata"></video>
+          <video src="assets/videos/density_mujoco_eef_property_overlay.mp4?v=h264-hero" poster="assets/posters/density_mujoco_eef_property_overlay.jpg?v=h264-hero" controls muted playsinline preload="metadata"></video>
           <figcaption>
             MuJoCo-rendered end effector over MPM density with online property
             posterior and GT bands.
           </figcaption>
         </figure>
         <figure>
-          <video src="assets/videos/sim2sim_bulldozing_wedge.mp4" controls muted playsinline preload="metadata"></video>
+          <video src="assets/videos/sim2sim_bulldozing_wedge.mp4?v=h264-hero" poster="assets/posters/sim2sim_bulldozing_wedge.jpg?v=h264-hero" controls muted playsinline preload="metadata"></video>
           <figcaption>
             GT granular material versus estimated granular material under the
             same bulldozing-wedge task.
           </figcaption>
         </figure>
         <figure>
-          <video src="assets/videos/density_mujoco_eef_render.mp4" controls muted playsinline preload="metadata"></video>
+          <video src="assets/videos/density_mujoco_eef_render.mp4?v=h264-hero" poster="assets/posters/density_mujoco_eef_render.jpg?v=h264-hero" controls muted playsinline preload="metadata"></video>
           <figcaption>
             Canonical fixed interaction-region render showing only the
             end-effector/tool over the density view.
