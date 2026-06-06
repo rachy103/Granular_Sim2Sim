@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 210" role="img" aria-labelledby="title desc">
+  <title id="title">Granular Sim2Sim logo</title>
+  <desc id="desc">Granular Sim2Sim wordmark with a robot excavation mark and posterior curve.</desc>
+  <rect x="8" y="8" width="194" height="194" rx="38" fill="#111817"/>
+  <path d="M36 147h138v20H36z" fill="#24302e"/>
+  <path d="M42 126c17-10 30-10 46 0 17 10 32 10 48 0 15-9 24-9 34-2v27H42z" fill="#c27a2c"/>
+  <path d="M42 141c17-8 30-8 46 1 17 9 33 9 49-1 13-8 22-8 33-1v16H42z" fill="#e0aa59" opacity=".84"/>
+  <path d="M48 116c17-10 31-9 47 1 14 8 28 9 42 3 12-5 20-5 30 2" fill="none" stroke="#f0c678" stroke-width="6" stroke-linecap="round"/>
+  <path d="M75 72h49l29 34-17 15-26-29H82z" fill="#eef2ef"/>
+  <path d="M121 70l21-17 22 27-21 17z" fill="#cbd2ce"/>
+  <path d="M142 53l16-14 14 17-16 14z" fill="#eef2ef"/>
+  <path d="M112 93l-16 26 27 15 16-26z" fill="#7fb2af"/>
+  <path d="M93 123l32 18" fill="none" stroke="#101817" stroke-width="7" stroke-linecap="round"/>
+  <path d="M52 56c16-13 33-14 51-2 18 12 35 11 53-4" fill="none" stroke="#75c6c1" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="52" cy="56" r="5" fill="#75c6c1"/>
+  <circle cx="103" cy="54" r="5" fill="#75c6c1"/>
+  <circle cx="156" cy="50" r="5" fill="#75c6c1"/>
+  <text x="230" y="86" fill="#111817" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="0">Granular Sim2Sim</text>
+  <text x="232" y="129" fill="#4d5a56" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="500" letter-spacing="0">Online material belief for robot excavation</text>
+  <path d="M232 158h350" stroke="#d8dddf" stroke-width="2"/>
+  <text x="232" y="185" fill="#7b4d21" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="19" font-weight="700" letter-spacing=".4">MPM GRANULAR MEDIA</text>
+  <text x="465" y="185" fill="#276c68" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="19" font-weight="700" letter-spacing=".4">MUJOCO ROBOT RENDERING</text>
+</svg>
