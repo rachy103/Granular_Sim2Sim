@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Granular Sim2Sim mark</title>
+  <desc id="desc">A robot excavation tool crossing layered granular media with an online belief curve.</desc>
+  <rect width="256" height="256" rx="44" fill="#111817"/>
+  <path d="M36 178h184v26H36z" fill="#24302e"/>
+  <path d="M44 151c22-13 39-13 60 0 22 14 42 14 64 0 19-12 31-12 44-2v34H44z" fill="#c27a2c"/>
+  <path d="M44 171c23-11 39-10 60 1 22 12 44 12 65-1 18-10 29-10 43-1v21H44z" fill="#e0aa59" opacity=".82"/>
+  <path d="M50 139c23-13 41-13 63 1 18 11 37 13 55 5 15-7 25-6 38 3" fill="none" stroke="#f0c678" stroke-width="8" stroke-linecap="round"/>
+  <path d="M78 83h64l37 45-22 19-34-38H88z" fill="#eef2ef"/>
+  <path d="M136 81l27-22 28 34-27 22z" fill="#cbd2ce"/>
+  <path d="M163 59l21-18 18 21-21 18z" fill="#eef2ef"/>
+  <path d="M125 110l-21 33 35 19 21-34z" fill="#7fb2af"/>
+  <path d="M100 148l42 24" fill="none" stroke="#101817" stroke-width="9" stroke-linecap="round"/>
+  <path d="M54 67c21-17 43-18 66-2 23 16 45 14 69-5" fill="none" stroke="#75c6c1" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="54" cy="67" r="7" fill="#75c6c1"/>
+  <circle cx="120" cy="65" r="7" fill="#75c6c1"/>
+  <circle cx="189" cy="60" r="7" fill="#75c6c1"/>
+</svg>
