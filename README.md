@@ -100,6 +100,22 @@ Gaussian decoder.
 
 See `docs/experiment_pipeline.md` for the full wrapper contract.
 
+For the next multimodal learning phase, see
+`docs/multimodal_mohr_coulomb_architecture.md`. It specifies the proposed
+2D-vision plus robot-sensor architecture for estimating four
+Mohr-Coulomb-style soil parameters from blade digging interactions.
+The first implementation is an online belief-update model that carries the
+material posterior forward frame by frame instead of re-inferring material
+parameters independently at each frame:
+
+```bash
+python scripts/train_online_mohr_coulomb.py --quick --output-dir outputs/online_mohr_coulomb_bestval_quick
+```
+
+The current canonical quick result restores the best validation checkpoint
+before export and writes the posterior rollout used by the render demos to
+`outputs/online_mohr_coulomb_bestval_quick/rollout_predictions.csv`.
+
 For amortized inference data generation, run a Latin-hypercube sweep over
 material and action nuisance variables:
 
@@ -168,6 +184,57 @@ Run the density-style renderer, which avoids drawing MPM material points as bead
 ```bash
 python scripts/run_3d_density_render_demo.py
 ```
+
+Render the fixed density-plus-MuJoCo-EEF view with property-estimation graphs:
+
+```bash
+make render-density-eef
+```
+
+This uses `configs/rendering/density_mujoco_eef_render_fixed.json` and writes
+the canonical overlay artifacts under `outputs/density_mujoco_eef_render/`.
+See `docs/rendering_environment.md` for the fixed rendering contract.
+
+Compare GT granular properties against estimated properties in the same MPM
+bulldozing-wedge probing task:
+
+```bash
+python scripts/render_sim2sim_property_compare.py --config configs/rendering/sim2sim_bulldozing_wedge.json
+```
+
+This writes a side-by-side Sim2Sim validation video under
+`outputs/sim2sim_bulldozing_wedge/`. See
+`docs/sim2sim_property_validation.md` for the material mapping and
+interpretation.
+
+Compare an excavation behavior that ignores the property model against a
+property-aware excavation behavior:
+
+```bash
+python scripts/render_excavation_policy_compare.py --config configs/rendering/excavation_policy_compare.json
+```
+
+This writes the model/no-model excavation comparison under
+`outputs/excavation_policy_compare/`. See
+`docs/excavation_policy_with_property_prediction.md` for the policy heuristic
+and metrics.
+
+The current comparison uses the same GT granular material on both sides. The
+left side ignores the estimated material and runs a fixed nominal excavation;
+the right side uses the estimated four-property posterior to choose a shallower,
+safer excavation plan.
+
+Run the hostile four-family material robustness benchmark:
+
+```bash
+make wild-robustness-stress
+```
+
+This trains and evaluates `gravel`, `sand`, `soil`, and `crunching` under
+held-out actions, held-out materials, overlapping property ranges, and sensor
+/ vision corruptions. The current stress result writes figures and metrics to
+`outputs/wild_material_robustness_stress/`; see
+`docs/wild_material_robustness_paper.md` for the paper-style draft.
 
 Run the Newton MPM spike and produce a local preview from Newton's USD particles:
 

@@ -1,4 +1,4 @@
-.PHONY: install install-lite test smoke smoke-bridge demo demo-no-bridge experiment-smoke experiment pipeline-smoke pipeline sweep-smoke sweep analyze-sweep artifacts clean-artifacts
+.PHONY: install install-lite test smoke smoke-bridge demo demo-no-bridge experiment-smoke experiment pipeline-smoke pipeline sweep-smoke sweep analyze-sweep render-density-eef sim2sim-property sim2sim-wedge excavation-policy wild-robustness wild-robustness-stress wild-review-audit artifacts clean-artifacts
 
 install:
 	./install.sh
@@ -42,6 +42,27 @@ sweep:
 
 analyze-sweep:
 	python scripts/analyze_sweep_scatter.py --sweep-root outputs/sweeps/lhs_phi_cohesion_action_v001
+
+render-density-eef:
+	python scripts/render_density_mujoco_eef_render.py --config configs/rendering/density_mujoco_eef_render_fixed.json
+
+sim2sim-property:
+	python scripts/render_sim2sim_property_compare.py --config configs/rendering/sim2sim_property_compare.json
+
+sim2sim-wedge:
+	python scripts/render_sim2sim_property_compare.py --config configs/rendering/sim2sim_bulldozing_wedge.json
+
+excavation-policy:
+	python scripts/render_excavation_policy_compare.py --config configs/rendering/excavation_policy_compare.json
+
+wild-robustness:
+	python scripts/run_wild_material_robustness.py --config configs/learning/wild_material_robustness.json --output-dir outputs/wild_material_robustness
+
+wild-robustness-stress:
+	python scripts/run_wild_material_robustness.py --config configs/learning/wild_material_robustness_stress.json --output-dir outputs/wild_material_robustness_stress
+
+wild-review-audit:
+	python scripts/run_wild_review_audit.py --config configs/learning/wild_material_robustness_stress.json --quick --output-dir outputs/wild_review_audit
 
 artifacts:
 	python scripts/package_demo_artifacts.py

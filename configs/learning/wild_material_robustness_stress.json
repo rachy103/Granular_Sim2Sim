@@ -1,0 +1,62 @@
+{
+  "wild_material_robustness": {
+    "seed": 131,
+    "device": "auto",
+    "materials_per_family": 40,
+    "actions_per_material": 6,
+    "frames": 48,
+    "quick_materials_per_family": 14,
+    "quick_actions_per_material": 6,
+    "quick_frames": 32,
+    "train_fraction": 0.55,
+    "validation_fraction": 0.15,
+    "heldout_action_ids": [3, 4, 5],
+    "family_ranges": {
+      "gravel": {
+        "rho": [1400.0, 2250.0],
+        "phi_deg": [31.0, 54.0],
+        "delta_deg": [15.0, 42.0],
+        "cohesion_kpa": [0.0, 8.0]
+      },
+      "sand": {
+        "rho": [1180.0, 1880.0],
+        "phi_deg": [24.0, 44.0],
+        "delta_deg": [10.0, 35.0],
+        "cohesion_kpa": [0.0, 7.0]
+      },
+      "soil": {
+        "rho": [980.0, 1920.0],
+        "phi_deg": [18.0, 41.0],
+        "delta_deg": [10.0, 38.0],
+        "cohesion_kpa": [3.0, 30.0]
+      },
+      "crunching": {
+        "rho": [480.0, 1650.0],
+        "phi_deg": [16.0, 46.0],
+        "delta_deg": [8.0, 36.0],
+        "cohesion_kpa": [0.0, 16.0]
+      }
+    },
+    "hidden_dim": 144,
+    "token_dim": 144,
+    "dropout": 0.10,
+    "learning_rate": 0.0011,
+    "weight_decay": 0.00025,
+    "family_loss_weight": 1.35,
+    "train_corruption_range": [0.08, 0.46],
+    "validation_corruption_range": [0.20, 0.52],
+    "validation_heldout_corruption_range": [0.32, 0.66],
+    "test_corruption_range": [0.38, 0.80],
+    "test_joint_corruption_range": [0.50, 0.88],
+    "epochs": 100,
+    "batch_size": 48,
+    "quick_epochs": 70,
+    "quick_batch_size": 24,
+    "robustness_thresholds": {
+      "min_family_accuracy": 0.80,
+      "min_worst_family_accuracy": 0.65,
+      "max_property_nmae_mean": 0.20,
+      "max_coverage_error_mean": 0.25
+    }
+  }
+}

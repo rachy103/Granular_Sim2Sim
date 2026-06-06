@@ -1,0 +1,70 @@
+{
+  "excavation_policy_compare": {
+    "property_csv": "outputs/online_mohr_coulomb_bestval_quick/rollout_predictions.csv",
+    "output_dir": "outputs/excavation_policy_compare",
+    "artifact_stem": "excavation_policy_compare",
+    "row": "last",
+    "device": "cuda:0",
+    "frames": 84,
+    "fps": 30,
+    "substeps_per_frame": 34,
+    "force_scale": 0.0012,
+    "force_limit_display": 2900.0,
+    "baseline_policy": {
+      "name": "fixed_nominal_no_model",
+      "insert_duration": 0.22,
+      "push_duration": 1.12,
+      "lift_duration": 0.34,
+      "x_start": 0.225,
+      "x_end": 0.790,
+      "y": 0.280,
+      "z_high": 0.335,
+      "z_work": 0.148,
+      "z_lift": 0.305,
+      "angle": 1.5707963267948966,
+      "blade_half_x": 0.105,
+      "blade_half_y": 0.145,
+      "blade_half_z": 0.012
+    },
+    "model_policy": {
+      "name": "property_aware_model",
+      "insert_duration_base": 0.24,
+      "push_duration_base": 1.18,
+      "lift_duration": 0.34,
+      "x_start": 0.225,
+      "x_end": 0.790,
+      "y": 0.280,
+      "z_high": 0.335,
+      "z_work_deep": 0.145,
+      "z_work_shallow": 0.215,
+      "z_lift": 0.305,
+      "x_end_strength_reduction": 0.55,
+      "angle": 1.5707963267948966,
+      "blade_half_x": 0.105,
+      "blade_half_y": 0.145,
+      "blade_half_z": 0.012
+    },
+    "mpm": {
+      "dt": 0.0008,
+      "poisson": 0.24,
+      "gravity": -1.35,
+      "max_grid_speed": 1.3,
+      "damping": 0.998,
+      "contact_band_cells": 1.35,
+      "penetration_stiffness": 0.045,
+      "seed": 7
+    },
+    "material_mapping": {
+      "rho_reference": 1550.0,
+      "rho_mass_min": 0.65,
+      "rho_mass_max": 1.35,
+      "dp_alpha_scale": 1.0,
+      "cohesion_kpa_to_mpm": 0.004,
+      "delta_tool_mu_scale": 2.2,
+      "tool_mu_min": 0.18,
+      "tool_mu_max": 0.92,
+      "young_base": 1800.0,
+      "young_per_kpa": 45.0
+    }
+  }
+}

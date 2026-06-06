@@ -1,0 +1,16 @@
+{
+  "density_mujoco_eef_render": {
+    "density_video": "outputs/3d_mpm_density_render/sand3d_density_render.mp4",
+    "output_dir": "outputs/density_mujoco_eef_render",
+    "property_csv": "outputs/online_mohr_coulomb_bestval_quick/rollout_predictions.csv",
+    "frames": 60,
+    "substeps_per_frame": 34,
+    "mpm_dt": 0.0008,
+    "robot_alpha": 0.98,
+    "crop_mode": "eef_path",
+    "top_crop_margin": 34,
+    "side_crop_margin": 20,
+    "show_center": false,
+    "skip_property_overlay": false
+  }
+}

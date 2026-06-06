@@ -1,0 +1,36 @@
+{
+  "wild_material_robustness": {
+    "seed": 101,
+    "device": "auto",
+    "materials_per_family": 36,
+    "actions_per_material": 6,
+    "frames": 48,
+    "quick_materials_per_family": 12,
+    "quick_actions_per_material": 6,
+    "quick_frames": 30,
+    "train_fraction": 0.58,
+    "validation_fraction": 0.16,
+    "heldout_action_ids": [4, 5],
+    "hidden_dim": 128,
+    "token_dim": 128,
+    "dropout": 0.08,
+    "learning_rate": 0.0012,
+    "weight_decay": 0.0002,
+    "family_loss_weight": 1.15,
+    "train_corruption_range": [0.05, 0.36],
+    "validation_corruption_range": [0.16, 0.46],
+    "validation_heldout_corruption_range": [0.28, 0.60],
+    "test_corruption_range": [0.34, 0.76],
+    "test_joint_corruption_range": [0.46, 0.84],
+    "epochs": 90,
+    "batch_size": 48,
+    "quick_epochs": 55,
+    "quick_batch_size": 24,
+    "robustness_thresholds": {
+      "min_family_accuracy": 0.82,
+      "min_worst_family_accuracy": 0.70,
+      "max_property_nmae_mean": 0.18,
+      "max_coverage_error_mean": 0.24
+    }
+  }
+}
