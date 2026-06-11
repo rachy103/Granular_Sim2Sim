@@ -1,0 +1,56 @@
+{
+  "summary": {
+    "method": "This repo posterior height-field MPC",
+    "n_trials": 5,
+    "final_height_map_error_mean": 2.902921199798584,
+    "final_height_map_error_std": 0.1685716062784195,
+    "emd_or_earth_mover_mean": 2.902921199798584,
+    "emd_or_earth_mover_std": 0.1685716062784195,
+    "chamfer_distance_mean": 0.001812553033232689,
+    "chamfer_distance_std": 0.00010500437201699242,
+    "dug_volume_error_m3_mean": 5.55647432065598e-07,
+    "dug_volume_error_m3_std": 1.4336990261654137e-07,
+    "target_trench_completion_mean": 1.0,
+    "target_trench_completion_std": 0.0,
+    "overflow_spillage_m3_mean": 0.000367955828551203,
+    "overflow_spillage_m3_std": 6.060958639864111e-06,
+    "runtime_sec_mean": 2.6186280250549316,
+    "runtime_sec_std": 0.05333787947893143,
+    "optimizer_evals_mean": 1536.0,
+    "optimizer_evals_std": 0.0,
+    "execution_strokes_mean": 8.0,
+    "execution_strokes_std": 0.0,
+    "sample_efficiency_hm_per_executed_stroke_mean": 0.362865149974823,
+    "sample_efficiency_hm_per_executed_stroke_std": 0.021071450784802437,
+    "removed_volume_m3_mean": 3.676406777231023e-05,
+    "removed_volume_m3_std": 1.1627518148316085e-07,
+    "reservoir_volume_m3_mean": 0.0003314890491310507,
+    "reservoir_volume_m3_std": 5.989933015371207e-06,
+    "transported_volume_m3_mean": 3.665346230263822e-05,
+    "transported_volume_m3_std": 2.40026167830365e-07
+  },
+  "gt_material": {
+    "rho": 1261.520751953125,
+    "phi_deg": 30.662269592285156,
+    "delta_deg": 23.736600875854492,
+    "cohesion_kpa": 8.473114013671875
+  },
+  "pred_material": {
+    "rho": 1268.6368408203125,
+    "phi_deg": 32.88200759887695,
+    "delta_deg": 22.220300674438477,
+    "cohesion_kpa": 8.710464477539062
+  },
+  "args": {
+    "seeds": "0,1,2,3,4",
+    "strokes": 8,
+    "candidates": 192,
+    "ensemble": 9,
+    "optimizer_seed": 20260611,
+    "write_video": true
+  },
+  "ddbot_official_height_map_mean": 3.9855568408966064,
+  "ddbot_official_emd_mean": 15.924596786499023,
+  "beats_ddbot_height_map_mean": true,
+  "validation_scope": "abstract_height_field_digital_twin_not_full_mpm"
+}
