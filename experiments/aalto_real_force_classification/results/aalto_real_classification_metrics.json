@@ -1,0 +1,80 @@
+{
+  "dataset_shape": [
+    682,
+    6,
+    1600
+  ],
+  "splits": 10,
+  "summary": [
+    {
+      "feature": "hfmh",
+      "accuracy_mean": 0.8825757575757575,
+      "accuracy_sd": 0.019963874117224598,
+      "worst_class_accuracy_mean": 0.5333333333333334,
+      "paper_accuracy_mean": 0.8705,
+      "paper_accuracy_sd": 0.0163
+    },
+    {
+      "feature": "norm_raw",
+      "accuracy_mean": 0.6636363636363636,
+      "accuracy_sd": 0.03765929673193384,
+      "worst_class_accuracy_mean": 0.175,
+      "paper_accuracy_mean": 0.8731,
+      "paper_accuracy_sd": 0.0251
+    },
+    {
+      "feature": "norm_raw_hfmh",
+      "accuracy_mean": 0.8037878787878789,
+      "accuracy_sd": 0.03320491024964949,
+      "worst_class_accuracy_mean": 0.36666666666666664,
+      "paper_accuracy_mean": 0.9303,
+      "paper_accuracy_sd": 0.0155
+    },
+    {
+      "feature": "raw",
+      "accuracy_mean": 0.7363636363636364,
+      "accuracy_sd": 0.03859590540311676,
+      "worst_class_accuracy_mean": 0.21666666666666665,
+      "paper_accuracy_mean": 0.7614,
+      "paper_accuracy_sd": 0.0265
+    },
+    {
+      "feature": "raw_hfmh",
+      "accuracy_mean": 0.8946969696969698,
+      "accuracy_sd": 0.02799501828669813,
+      "worst_class_accuracy_mean": 0.6249999999999999,
+      "paper_accuracy_mean": 0.9705,
+      "paper_accuracy_sd": 0.0098
+    }
+  ],
+  "prefix": [
+    {
+      "prefix_fraction": 0.1,
+      "seconds": 0.32000000000000006,
+      "accuracy_mean": 0.7295454545454546,
+      "accuracy_sd": 0.04765306078975815,
+      "worst_class_accuracy_mean": 0.39166666666666666
+    },
+    {
+      "prefix_fraction": 0.25,
+      "seconds": 0.8,
+      "accuracy_mean": 0.8606060606060606,
+      "accuracy_sd": 0.020265053179534205,
+      "worst_class_accuracy_mean": 0.575
+    },
+    {
+      "prefix_fraction": 0.5,
+      "seconds": 1.6,
+      "accuracy_mean": 0.8515151515151516,
+      "accuracy_sd": 0.029056868411399036,
+      "worst_class_accuracy_mean": 0.5166666666666666
+    },
+    {
+      "prefix_fraction": 1.0,
+      "seconds": 3.2,
+      "accuracy_mean": 0.8712121212121211,
+      "accuracy_sd": 0.03369107086900586,
+      "worst_class_accuracy_mean": 0.5833333333333333
+    }
+  ]
+}
