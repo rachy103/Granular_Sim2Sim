@@ -24,9 +24,18 @@
 </p>
 
 <p align="center">
-  <a href="https://rachy103.github.io/Granular_Sim2Sim/">
-    <img src="docs/assets/posters/excavation_policy_compare.jpg" width="860" alt="Property-aware excavation comparison teaser">
+  <video src="docs/assets/videos/property_aware_mpm_excavation.mp4" poster="docs/assets/posters/property_aware_mpm_excavation.jpg" width="860" controls muted loop playsinline></video>
+</p>
+
+<p align="center">
+  <a href="docs/assets/videos/property_aware_mpm_excavation.mp4">
+    <img src="docs/assets/posters/property_aware_mpm_excavation.jpg" width="860" alt="Main result: posterior-conditioned excavation control">
   </a>
+</p>
+
+<p align="center">
+  <b>Main theme:</b> short interaction → material posterior → safer excavation action.
+  Same GT MPM sand and blade geometry, with controller belief ablated.
 </p>
 
 This repository is a reproducible sandbox for Sim2Sim granular robot interaction.
@@ -58,6 +67,10 @@ transfer is the next step, not a current claim.
   properties.
 - Sim2Sim validation tasks that make material differences visible, including
   bulldozing-wedge probing and property-aware excavation.
+- A posterior-conditioned excavation ablation in the same GT MPM sand bed:
+  no posterior, wrong posterior, estimated posterior, and GT property reference.
+- Scoped DDBot-style target digging and real force/torque sanity checks.
+- A mini research proposal for construction-site granular digital twins.
 - A stress benchmark plus reviewer audit for leakage, modality dependence, and
   calibration checks.
 - A GitHub Pages project site under `docs/`.
@@ -70,6 +83,20 @@ Headline stress result:
 | Worst-family accuracy | 0.877 |
 | Mean property nMAE | 0.082 |
 | Coverage error | 0.046 |
+
+Main downstream control result:
+
+| Controller belief | Trench depth | Depth completion | Peak force | Force violation | Score |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| No posterior | 25.5 mm | 0.36 | 1595 N | 0 N | 135.8 |
+| Wrong posterior | 0.0 mm | 0.00 | 2571 N | 0 N | 137.6 |
+| Estimated posterior | 45.6 mm | 0.65 | 2257 N | 0 N | 180.3 |
+| GT property reference | 39.1 mm | 0.56 | 2253 N | 0 N | 175.8 |
+
+The GT property row is an oracle controller reference under the same finite
+trajectory budget, not a global optimum. The estimated posterior result means
+the belief was good enough to select a GT-level action from the sampled
+candidate set.
 
 ## Environment
 
@@ -117,6 +144,9 @@ GRANULAR_SMOKE_DEVICE=cuda:0 make smoke
 Rebuild the canonical project-page artifacts:
 
 ```bash
+make property-aware-mpm
+make ddbot-core-force
+make aalto-real-force
 make render-density-eef
 make sim2sim-wedge
 make excavation-policy
@@ -183,9 +213,33 @@ Compare a fixed no-model excavation policy against a property-aware policy:
 make excavation-policy
 ```
 
+Run the main posterior-conditioned MPM excavation ablation:
+
+```bash
+make property-aware-mpm
+```
+
+Run the scoped DDBot-core force-posterior comparison:
+
+```bash
+make ddbot-core-force
+```
+
+Run the public real force/torque material-classification sanity check:
+
+```bash
+make aalto-real-force
+```
+
 Canonical outputs:
 
 ```text
+experiments/property_aware_mpm_excavation/assets/mpm_posterior_control_ablation.mp4
+experiments/property_aware_mpm_excavation/assets/mpm_posterior_control_summary.png
+experiments/ddbot_core_force_posterior_benchmark/assets/ddbot_core_vs_force_posterior.mp4
+experiments/ddbot_core_force_posterior_benchmark/assets/ddbot_core_force_posterior_summary.png
+experiments/aalto_real_force_classification/results/aalto_summary_accuracy.png
+experiments/aalto_real_force_classification/results/aalto_prefix_accuracy.png
 outputs/density_mujoco_eef_render/density_mujoco_eef_property_overlay.mp4
 outputs/sim2sim_bulldozing_wedge/sim2sim_bulldozing_wedge.mp4
 outputs/excavation_policy_compare/excavation_policy_compare.mp4

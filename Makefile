@@ -1,4 +1,4 @@
-.PHONY: install install-lite test smoke smoke-bridge demo demo-no-bridge experiment-smoke experiment pipeline-smoke pipeline sweep-smoke sweep analyze-sweep render-density-eef sim2sim-property sim2sim-wedge excavation-policy wild-robustness wild-robustness-stress wild-review-audit artifacts clean-artifacts
+.PHONY: install install-lite test smoke smoke-bridge demo demo-no-bridge experiment-smoke experiment pipeline-smoke pipeline sweep-smoke sweep analyze-sweep render-density-eef sim2sim-property sim2sim-wedge excavation-policy property-aware-mpm ddbot-core-force aalto-real-force wild-robustness wild-robustness-stress wild-review-audit artifacts clean-artifacts
 
 install:
 	./install.sh
@@ -54,6 +54,15 @@ sim2sim-wedge:
 
 excavation-policy:
 	python scripts/render_excavation_policy_compare.py --config configs/rendering/excavation_policy_compare.json
+
+property-aware-mpm:
+	python experiments/property_aware_mpm_excavation/run_mpm_posterior_control_ablation.py --write-video
+
+ddbot-core-force:
+	python experiments/ddbot_core_force_posterior_benchmark/run_benchmark.py --write-video
+
+aalto-real-force:
+	python experiments/aalto_real_force_classification/run_experiment.py
 
 wild-robustness:
 	python scripts/run_wild_material_robustness.py --config configs/learning/wild_material_robustness.json --output-dir outputs/wild_material_robustness
