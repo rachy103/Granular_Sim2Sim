@@ -10,7 +10,7 @@
     />
     <meta property="og:title" content="Granular Sim2Sim" />
     <meta property="og:description" content="Online material belief for robot excavation in granular media." />
-    <meta property="og:image" content="assets/posters/excavation_policy_compare.jpg" />
+    <meta property="og:image" content="assets/posters/property_aware_mpm_excavation.jpg" />
     <link rel="icon" href="assets/brand/granular-belief-mark.svg" type="image/svg+xml" />
     <style>
       :root {
@@ -407,7 +407,10 @@
         <div class="navlinks">
           <a href="#method">Method</a>
           <a href="#results">Results</a>
+          <a href="#policy">Policy</a>
+          <a href="#checks">Checks</a>
           <a href="#videos">Videos</a>
+          <a href="#proposal">Proposal</a>
           <a href="#reproduce">Reproduce</a>
           <a href="https://github.com/rachy103/Granular_Sim2Sim">GitHub</a>
         </div>
@@ -418,8 +421,8 @@
       <div class="wrap hero">
         <div class="hero-video">
           <video
-            src="assets/videos/excavation_policy_compare.mp4?v=sim2sim-brand"
-            poster="assets/posters/excavation_policy_compare.jpg?v=sim2sim-brand"
+            src="assets/videos/property_aware_mpm_excavation.mp4?v=posterior-control-finalmetrics"
+            poster="assets/posters/property_aware_mpm_excavation.jpg?v=posterior-control"
             controls
             autoplay
             muted
@@ -428,8 +431,8 @@
             preload="auto"
           ></video>
           <div class="hero-caption">
-            <strong>Featured result: property-aware excavation versus a fixed no-model plan.</strong>
-            <span>Browser-safe H.264, yuv420p, faststart encoded.</span>
+            <strong>Main theme: short interaction → material posterior → safer excavation action.</strong>
+            <span>Same GT MPM sand, same blade, controller belief ablation.</span>
           </div>
         </div>
 
@@ -440,8 +443,8 @@
             <h1>Online material belief for robot excavation</h1>
             <p class="lede">
               A reproducible synthetic benchmark for estimating granular material family and
-              Mohr-Coulomb-style properties from robot interaction, then using the posterior
-              to choose safer excavation behavior.
+              Mohr-Coulomb-style properties from contact-rich robot interaction, then using
+              that posterior to change excavation behavior under force and transport constraints.
             </p>
             <div class="actions">
               <a class="button" href="wild_material_robustness_paper.md">Paper Draft</a>
@@ -452,9 +455,9 @@
           </div>
           <div class="metrics" aria-label="Stress benchmark headline metrics">
             <div class="metric"><strong>0.931</strong><span>family accuracy</span></div>
-            <div class="metric"><strong>0.877</strong><span>worst-family accuracy</span></div>
-            <div class="metric"><strong>0.082</strong><span>mean property nMAE</span></div>
-            <div class="metric"><strong>0.046</strong><span>coverage error</span></div>
+            <div class="metric"><strong>0.082</strong><span>property nMAE</span></div>
+            <div class="metric"><strong>0.65</strong><span>posterior depth completion</span></div>
+            <div class="metric"><strong>86.1%</strong><span>0.8 s real-force prefix</span></div>
           </div>
         </div>
       </div>
@@ -462,9 +465,10 @@
 
     <main class="wrap">
       <p class="callout">
-        Scope: this project currently claims Sim2Sim robustness only. It is designed so the
-        same property posterior, probes, render contract, and policy heuristics can be swapped
-        into Real2Sim later without changing the evaluation story.
+        Scope: this project currently claims synthetic Sim2Sim robustness and scoped
+        control usefulness, not full Real2Sim deployment. The evidence chain is explicit:
+        first estimate a material belief, then test whether that belief changes a downstream
+        excavation action, then add scoped DDBot and real-force sanity checks.
       </p>
 
       <section id="method">
@@ -472,9 +476,10 @@
           <div>
             <h2>Method</h2>
             <p>
-              The core idea is to keep the granular medium inspectable: first infer material
-              belief from the contact-rich rollout, then evaluate whether that belief changes
-              a downstream excavation action in the simulator.
+              The core idea is to keep the granular medium inspectable: a blade/scraper
+              interaction produces force and surface-change evidence, the model turns that
+              evidence into an online material posterior, and the controller uses the posterior
+              to choose a safer excavation action.
             </p>
           </div>
         </div>
@@ -493,7 +498,7 @@
           </div>
           <div class="panel step">
             <h3>Close the loop</h3>
-            <p>Use the posterior to select a shallower excavation plan when the material looks risky.</p>
+            <p>Use the posterior to select a trajectory that balances trench depth, transport, spillage, and force risk.</p>
           </div>
         </div>
       </section>
@@ -501,10 +506,11 @@
       <section id="results">
         <div class="section-head">
           <div>
-            <h2>Stress Benchmark</h2>
+            <h2>Estimator Stress Benchmark</h2>
             <p>
               The headline run uses held-out actions, held-out materials, overlapping property
-              ranges, sensor noise, and vision corruptions.
+              ranges, sensor noise, and vision corruptions. These gates are a readiness check
+              for the posterior, not a real-world success claim by themselves.
             </p>
           </div>
           <a href="wild_material_robustness_paper.md">Read paper-style draft</a>
@@ -525,6 +531,133 @@
         </div>
       </section>
 
+      <section id="policy">
+        <div class="section-head">
+          <div>
+            <h2>Posterior-Conditioned Excavation</h2>
+            <p>
+              The main downstream test keeps the same GT MPM sand bed and the same blade
+              interaction, then changes only the controller belief: no posterior, wrong
+              posterior, estimated posterior, and GT property reference.
+            </p>
+          </div>
+        </div>
+        <div class="result-strip">
+          <figure>
+            <video src="assets/videos/property_aware_mpm_excavation.mp4?v=posterior-control-finalmetrics" poster="assets/posters/property_aware_mpm_excavation.jpg?v=posterior-control" controls muted playsinline preload="metadata"></video>
+            <figcaption>
+              Main video. The estimated posterior selects a productive valid stroke and
+              reaches the deepest trench completion while keeping force violation at zero.
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="assets/figures/mpm_posterior_control_summary.png" alt="Posterior control ablation summary" />
+            <figcaption>
+              Same material, same target corridor, same blade geometry. The result isolates
+              whether the material belief changes the selected excavation action.
+            </figcaption>
+          </figure>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Controller belief</th>
+                <th>Trench depth</th>
+                <th>Depth completion</th>
+                <th>Peak force</th>
+                <th>Force violation</th>
+                <th>Intuitive score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>No posterior</td>
+                <td>25.5 mm</td>
+                <td>0.36</td>
+                <td>1595 N</td>
+                <td>0 N</td>
+                <td>135.8</td>
+              </tr>
+              <tr>
+                <td>Wrong posterior</td>
+                <td>0.0 mm</td>
+                <td>0.00</td>
+                <td>2571 N</td>
+                <td>0 N</td>
+                <td>137.6</td>
+              </tr>
+              <tr>
+                <td><strong>Estimated posterior</strong></td>
+                <td><strong>45.6 mm</strong></td>
+                <td><strong>0.65</strong></td>
+                <td>2257 N</td>
+                <td>0 N</td>
+                <td><strong>180.3</strong></td>
+              </tr>
+              <tr>
+                <td>GT property reference</td>
+                <td>39.1 mm</td>
+                <td>0.56</td>
+                <td>2253 N</td>
+                <td>0 N</td>
+                <td>175.8</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="callout">
+          The GT property row is a controller reference under the same finite trajectory budget,
+          not a mathematical optimum. When the estimated row is slightly stronger, the claim is
+          not that the estimate is better than GT; it means the posterior was good enough to pick
+          a GT-level action from the sampled controller candidates.
+        </p>
+      </section>
+
+      <section id="checks">
+        <div class="section-head">
+          <div>
+            <h2>Scoped Comparison And Real-Force Checks</h2>
+            <p>
+              These checks are deliberately bounded. They support the claim that force-aware
+              posterior control is useful, while avoiding a blanket claim that the full official
+              DDBot system or real-world excavation has been solved.
+            </p>
+          </div>
+        </div>
+        <div class="grid">
+          <figure>
+            <video src="assets/videos/ddbot_core_force_posterior.mp4?v=force-posterior" poster="assets/posters/ddbot_core_force_posterior.jpg?v=force-posterior" controls muted playsinline preload="metadata"></video>
+            <figcaption>
+              DDBot-style target digging core reimplementation. Under a vision-ambiguous,
+              force-dominant setting, force posterior control reduces height-map error and
+              force violation relative to a target-only baseline.
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="assets/figures/ddbot_core_force_posterior_summary.png" alt="DDBot core force posterior benchmark summary" />
+            <figcaption>
+              Scope matters: both controllers use the same abstract blade/tool action model,
+              target, and budget. This is not the full official DDBot robot mesh or runtime.
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="assets/figures/aalto_summary_accuracy.png" alt="Aalto real force classification summary" />
+            <figcaption>
+              Real-data sanity check on a public force/torque dataset: granular material
+              identity is visible in force features, not only in synthetic MPM summaries.
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="assets/figures/aalto_prefix_accuracy.png" alt="Aalto prefix accuracy curve" />
+            <figcaption>
+              A 0.8 s interaction prefix reaches 86.1% accuracy, supporting short-prefix
+              online belief updates before long excavation rollouts.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
       <section id="videos">
         <div class="section-head">
           <div>
@@ -537,6 +670,12 @@
           </div>
         </div>
         <div class="grid">
+          <figure>
+            <video src="assets/videos/excavation_policy_compare.mp4?v=sim2sim-brand" poster="assets/posters/excavation_policy_compare.jpg?v=sim2sim-brand" controls muted playsinline preload="metadata"></video>
+            <figcaption>
+              Earlier fixed no-model excavation versus property-aware excavation visualization.
+            </figcaption>
+          </figure>
           <figure>
             <video src="assets/videos/density_mujoco_eef_property_overlay.mp4?v=sim2sim-brand" poster="assets/posters/density_mujoco_eef_property_overlay.jpg?v=sim2sim-brand" controls muted playsinline preload="metadata"></video>
             <figcaption>
@@ -596,6 +735,41 @@
           </tbody>
         </table>
         </div>
+      </section>
+
+      <section id="proposal">
+        <div class="section-head">
+          <div>
+            <h2>Mini Proposal: Construction-Site Granular Digital Twin</h2>
+            <p>
+              The next research target is a site-level digital twin for sand, soil, and
+              aggregate handling: estimate material belief from machine interaction, update
+              the terrain twin, and replan excavation before overload or spillage happens.
+            </p>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="panel step">
+            <h3>Sense the site</h3>
+            <p>Fuse RGB-D or LiDAR height maps with machine pose, bucket trajectory, hydraulic pressure, or F/T proxies.</p>
+          </div>
+          <div class="panel step">
+            <h3>Update material belief</h3>
+            <p>Maintain an online posterior over density, friction, interface friction, cohesion, and moisture-like proxies.</p>
+          </div>
+          <div class="panel step">
+            <h3>Roll out the twin</h3>
+            <p>Use a fast height-field or MPM surrogate to predict terrain change, reaction force, work, and overflow risk.</p>
+          </div>
+          <div class="panel step">
+            <h3>Optimize the next action</h3>
+            <p>Choose the next bucket/tool motion against target shape, force limits, cycle time, and spillage constraints.</p>
+          </div>
+        </div>
+        <p class="callout">
+          Proposed contribution: a construction digital twin that does not treat sand as a fixed visual surface.
+          It continuously updates material uncertainty from interaction and uses that uncertainty in planning.
+        </p>
       </section>
 
       <section id="reproduce">
