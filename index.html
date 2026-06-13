@@ -3,821 +3,731 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Granular Sim2Sim: Online Material Belief for Robot Excavation</title>
+    <title>Granular Sim2Sim</title>
     <meta
       name="description"
-      content="A reproducible Sim2Sim benchmark for online granular material estimation and property-aware robot excavation."
+      content="A controlled Sim2Sim study of online material belief for granular excavation action selection."
     />
     <meta property="og:title" content="Granular Sim2Sim" />
-    <meta property="og:description" content="Online material belief for robot excavation in granular media." />
-    <meta property="og:image" content="assets/posters/property_aware_mpm_excavation.jpg" />
+    <meta property="og:description" content="Raw RGB material belief for finite-budget granular excavation selection." />
+    <meta property="og:image" content="assets/posters/raw_rgb_posterior_teaser.jpg" />
     <link rel="icon" href="assets/brand/granular-belief-mark.svg" type="image/svg+xml" />
     <style>
       :root {
         color-scheme: light;
-        --ink: #131817;
-        --muted: #52605c;
-        --subtle: #e1e6e2;
-        --paper: #f5f4ef;
-        --panel: #ffffff;
-        --dark: #101716;
-        --dark-2: #17211f;
-        --sand: #c27a2c;
-        --sand-2: #e0aa59;
-        --teal: #276c68;
-        --teal-2: #75c6c1;
-        --green: #4f8f5a;
-        --blue: #315f91;
+        --ink: #101828;
+        --muted: #526171;
+        --soft: #f4f8fb;
+        --paper: #ffffff;
+        --line: #d9e2ea;
+        --nav: rgba(250, 252, 255, 0.92);
+        --blue: #10233f;
+        --red: #b4113a;
+        --teal: #158c88;
+        --sand: #c47524;
       }
+
       * {
         box-sizing: border-box;
       }
+
       html {
         scroll-behavior: smooth;
       }
+
       body {
         margin: 0;
-        background: var(--paper);
+        background: linear-gradient(180deg, #f9fbfd 0%, #eef5f9 100%);
         color: var(--ink);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        line-height: 1.55;
+        line-height: 1.56;
       }
+
       a {
-        color: var(--blue);
+        color: inherit;
         text-decoration-thickness: 1px;
         text-underline-offset: 4px;
       }
+
       img,
       video {
         max-width: 100%;
       }
+
       .wrap {
-        width: min(1180px, calc(100% - 36px));
+        width: min(1050px, calc(100% - 32px));
         margin: 0 auto;
       }
+
       .topbar {
         position: sticky;
         top: 0;
-        z-index: 10;
-        border-bottom: 1px solid rgba(255, 255, 255, .12);
-        background: rgba(16, 23, 22, .96);
-        color: #eef2ef;
+        z-index: 20;
+        border-bottom: 1px solid rgba(16, 24, 40, 0.10);
+        background: var(--nav);
+        backdrop-filter: blur(16px);
       }
+
       .nav {
-        display: flex;
+        min-height: 58px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        min-height: 68px;
+        gap: 14px;
+        font-size: 14px;
       }
+
       .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
-        color: #ffffff;
+        justify-self: start;
+        color: var(--blue);
+        font-weight: 850;
         text-decoration: none;
       }
-      .brand img {
-        width: 42px;
-        height: 42px;
-        flex: 0 0 auto;
+
+      .more {
+        justify-self: center;
+        color: #536171;
+        font-weight: 650;
       }
-      .brand span {
-        font-weight: 800;
-        font-size: 16px;
-        letter-spacing: 0;
-        white-space: nowrap;
-      }
-      .navlinks {
+
+      .links {
+        justify-self: end;
         display: flex;
         align-items: center;
         gap: 18px;
-        font-size: 14px;
       }
-      .navlinks a {
-        color: #dce6e2;
+
+      .links a {
+        color: #536171;
         text-decoration: none;
+        font-weight: 650;
       }
+
       header {
-        background: var(--dark);
-        color: #f7faf8;
-        padding: 34px 0 46px;
+        padding: 42px 0 22px;
+        text-align: center;
       }
-      .hero {
-        display: grid;
-        gap: 24px;
-      }
-      .hero-video {
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, .16);
-        background: #050606;
-        box-shadow: 0 24px 70px rgba(0, 0, 0, .34);
-      }
-      .hero-video video {
-        display: block;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        object-fit: cover;
-        background: #050606;
-      }
-      .hero-caption {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-        padding: 12px 14px;
-        color: #c6d1cd;
-        background: var(--dark-2);
-        font-size: 14px;
-      }
-      .hero-caption strong {
-        color: #ffffff;
-      }
-      .hero-copy {
-        display: grid;
-        grid-template-columns: 1.25fr .75fr;
-        gap: 28px;
-        align-items: end;
-      }
-      .paper-logo {
-        width: min(620px, 100%);
-        height: auto;
-        display: block;
-        filter: drop-shadow(0 18px 38px rgba(0, 0, 0, .24));
-        background: #f5f4ef;
-      }
-      .eyebrow {
-        margin: 16px 0 10px;
-        color: var(--teal-2);
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-      }
+
       h1 {
-        margin: 0;
-        font-size: clamp(34px, 5vw, 64px);
-        line-height: 1.02;
-        letter-spacing: 0;
-        max-width: 900px;
+        margin: 0 auto;
+        max-width: 930px;
+        color: var(--blue);
+        font-size: clamp(38px, 6vw, 68px);
+        line-height: 1.08;
+        letter-spacing: -0.01em;
       }
-      .lede {
-        margin: 16px 0 0;
-        max-width: 860px;
-        color: #cbd5d1;
+
+      h1 .accent {
+        color: var(--red);
+      }
+
+      .subtitle {
+        margin: 8px auto 0;
+        max-width: 790px;
+        color: var(--blue);
+        font-size: clamp(24px, 3vw, 35px);
+        line-height: 1.18;
+        font-weight: 750;
+      }
+
+      .authors {
+        margin: 26px auto 0;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px 30px;
+        color: var(--blue);
         font-size: 18px;
       }
-      .actions {
+
+      .authors span {
+        border-bottom: 0;
+      }
+
+      .venue {
+        margin-top: 13px;
+        color: #657384;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .pills {
+        margin: 22px auto 0;
         display: flex;
+        justify-content: center;
         flex-wrap: wrap;
         gap: 10px;
-        margin-top: 22px;
       }
-      .button {
+
+      .pill {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 40px;
-        padding: 9px 14px;
-        border: 1px solid rgba(255, 255, 255, .18);
-        background: #eef2ef;
-        color: #111817;
+        min-height: 42px;
+        padding: 9px 18px;
+        border-radius: 999px;
+        background: var(--blue);
+        color: #fff;
         font-size: 14px;
         font-weight: 800;
         text-decoration: none;
+        box-shadow: 0 8px 18px rgba(16, 35, 63, 0.16);
       }
-      .button.secondary {
-        background: transparent;
-        color: #f4f8f6;
+
+      .pill.alt {
+        background: #fff;
+        color: var(--blue);
+        border: 1px solid var(--line);
       }
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-      }
-      .metric {
-        border: 1px solid rgba(255, 255, 255, .15);
-        background: var(--dark-2);
-        padding: 16px;
-      }
-      .metric strong {
-        display: block;
-        color: #ffffff;
-        font-size: 30px;
-        line-height: 1;
-      }
-      .metric span {
-        color: #bdc9c5;
-        font-size: 13px;
-      }
-      main {
-        padding: 34px 0 54px;
-      }
+
       section {
-        margin-top: 42px;
+        padding: 28px 0;
       }
+
       h2 {
-        margin: 0 0 14px;
-        font-size: 28px;
-        line-height: 1.18;
-        letter-spacing: 0;
+        margin: 0 0 16px;
+        color: var(--blue);
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.16;
+        text-align: center;
+        letter-spacing: -0.01em;
       }
+
+      h2 .accent {
+        color: var(--red);
+      }
+
       h3 {
-        margin: 0 0 8px;
-        font-size: 17px;
-        letter-spacing: 0;
+        margin: 0 0 10px;
+        color: var(--blue);
+        font-size: 19px;
+        line-height: 1.25;
+        text-align: center;
       }
+
       p {
         margin: 0 0 14px;
         color: var(--muted);
       }
-      .section-head {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        gap: 24px;
-        margin-bottom: 14px;
+
+      .abstract {
+        max-width: 930px;
+        margin: 0 auto;
+        color: #253044;
+        font-size: 17px;
+        text-align: justify;
       }
-      .section-head p {
-        max-width: 670px;
+
+      .hero-video {
+        margin: 30px auto 0;
+        max-width: 1080px;
       }
-      .grid {
+
+      .media-box {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: #fff;
+        box-shadow: 0 14px 36px rgba(16, 24, 40, 0.08);
+      }
+
+      .media-box video,
+      .media-box img {
+        display: block;
+        width: 100%;
+      }
+
+      .media-box video {
+        aspect-ratio: 16 / 9;
+        background: #05090a;
+        object-fit: cover;
+      }
+
+      .caption {
+        padding: 10px 14px 13px;
+        color: var(--muted);
+        font-size: 14px;
+        text-align: center;
+      }
+
+      .highlights {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
+        gap: 14px;
+        max-width: 900px;
+        margin: 0 auto;
       }
-      .grid.three {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+      .highlight-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fff;
+        padding: 12px;
+        box-shadow: 0 14px 32px rgba(16, 24, 40, 0.07);
       }
-      .panel,
-      figure,
-      table {
-        border: 1px solid var(--subtle);
-        background: var(--panel);
+
+      .highlight-card .media-box {
+        border-radius: 11px;
+        box-shadow: none;
       }
-      .panel,
-      figure,
-      .metric,
-      .grid > *,
-      .split > *,
-      .steps > * {
-        min-width: 0;
+
+      .highlight-card h3 {
+        margin-bottom: 9px;
       }
-      .panel {
-        padding: 18px;
+
+      .highlight-card .caption {
+        padding-bottom: 3px;
       }
-      .panel p:last-child {
-        margin-bottom: 0;
+
+      .figure-wide {
+        max-width: 930px;
+        margin: 0 auto;
       }
-      figure {
+
+      .explain {
+        max-width: 860px;
+        margin: 16px auto 0;
+        color: #37445a;
+        text-align: justify;
+        font-size: 16px;
+      }
+
+      .task-head {
+        position: relative;
+        max-width: 990px;
+        margin: 0 auto 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+      }
+
+      .task-head h2 {
         margin: 0;
       }
-      figure img,
-      figure video {
-        display: block;
-        width: 100%;
-        height: auto;
-        background: #101716;
+
+      .play-toggle {
+        min-height: 44px;
+        padding: 9px 18px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--red);
+        color: #fff;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 850;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(180, 17, 58, 0.18);
       }
-      figure video {
-        aspect-ratio: 16 / 9;
-        object-fit: contain;
-      }
-      figcaption {
-        padding: 11px 13px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-      .result-strip {
+
+      .task-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 18px;
+        gap: 14px;
+        max-width: 990px;
+        margin: 0 auto;
       }
-      .callout {
-        border-left: 4px solid var(--sand);
-        background: #fff9ef;
-        padding: 14px 16px;
-        color: #5d4530;
+
+      .task-grid.single {
+        grid-template-columns: 1fr;
       }
-      .steps {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        counter-reset: step;
+
+      .task-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
-      .step {
-        position: relative;
-        min-height: 152px;
-        border-top: 4px solid var(--teal);
+
+      .table-wrap {
+        max-width: 990px;
+        margin: 16px auto 0;
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
       }
-      .step::before {
-        counter-increment: step;
-        content: "0" counter(step);
-        display: block;
-        margin-bottom: 18px;
-        color: var(--sand);
-        font-weight: 900;
-        letter-spacing: .06em;
-      }
+
       table {
         width: 100%;
+        min-width: 720px;
         border-collapse: collapse;
-      }
-      .table-scroll {
-        overflow-x: auto;
-      }
-      th,
-      td {
-        padding: 10px 12px;
-        border-bottom: 1px solid var(--subtle);
-        text-align: left;
         font-size: 14px;
       }
+
+      th,
+      td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #eef2f6;
+        text-align: left;
+      }
+
       th {
-        background: #eef1ed;
-        color: #27302d;
+        color: var(--blue);
+        background: #f5f8fb;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
-      code,
-      pre {
-        font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
       }
-      code {
-        background: #ecefed;
-        padding: 2px 5px;
+
+      .scope {
+        max-width: 920px;
+        margin: 0 auto;
       }
+
       pre {
         overflow-x: auto;
-        max-width: 100%;
-        margin: 0;
-        padding: 14px;
-        background: #111817;
-        color: #edf4f1;
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #101828;
+        color: #eef6fb;
         font-size: 13px;
+        line-height: 1.52;
       }
-      .split {
-        display: grid;
-        grid-template-columns: .95fr 1.05fr;
-        gap: 18px;
-        align-items: start;
-      }
+
       footer {
-        border-top: 1px solid var(--subtle);
-        padding: 28px 0;
-        color: var(--muted);
+        padding: 34px 0 46px;
+        color: #6b7888;
+        font-size: 13px;
+        text-align: center;
       }
-      @media (max-width: 920px) {
-        .hero-copy,
-        .split,
-        .result-strip,
-        .grid,
-        .grid.three,
-        .steps,
-        .metrics {
-          grid-template-columns: 1fr;
-        }
-        .section-head {
-          display: block;
-        }
+
+      @media (max-width: 820px) {
         .nav {
-          align-items: flex-start;
-          flex-direction: column;
-          padding: 12px 0;
+          grid-template-columns: 1fr;
+          justify-items: center;
+          padding: 10px 0;
         }
-        .navlinks {
+
+        .brand,
+        .more,
+        .links {
+          justify-self: center;
+        }
+
+        .links {
           flex-wrap: wrap;
+          justify-content: center;
           gap: 12px;
         }
-        .hero-caption {
-          display: block;
+
+        .authors {
+          font-size: 16px;
         }
-        header {
-          padding-top: 24px;
+
+        .highlights,
+        .task-grid,
+        .task-grid.three {
+          grid-template-columns: 1fr;
+        }
+
+        .task-head {
+          flex-direction: column;
         }
       }
     </style>
   </head>
   <body>
-    <div class="topbar">
-      <nav class="wrap nav" aria-label="Project navigation">
-        <a class="brand" href="#">
-          <img src="assets/brand/granular-belief-mark.svg" alt="" />
-          <span>Granular Sim2Sim</span>
-        </a>
-        <div class="navlinks">
-          <a href="#method">Method</a>
+    <nav class="topbar" aria-label="Primary">
+      <div class="wrap nav">
+        <a class="brand" href="#">Granular Sim2Sim</a>
+        <div class="more">Controlled Sim2Sim Study</div>
+        <div class="links">
+          <a href="#summary">Summary</a>
           <a href="#results">Results</a>
-          <a href="#policy">Policy</a>
+          <a href="#policies">Policies</a>
           <a href="#checks">Checks</a>
-          <a href="#videos">Videos</a>
-          <a href="#proposal">Proposal</a>
           <a href="#reproduce">Reproduce</a>
-          <a href="https://github.com/rachy103/Granular_Sim2Sim">GitHub</a>
         </div>
-      </nav>
-    </div>
+      </div>
+    </nav>
 
-    <header>
-      <div class="wrap hero">
-        <div class="hero-video">
-          <video
-            src="assets/videos/property_aware_mpm_excavation.mp4?v=posterior-control-finalmetrics"
-            poster="assets/posters/property_aware_mpm_excavation.jpg?v=posterior-control"
-            controls
-            autoplay
-            muted
-            loop
-            playsinline
-            preload="auto"
-          ></video>
-          <div class="hero-caption">
-            <strong>Main theme: short interaction → material posterior → safer excavation action.</strong>
-            <span>Same GT MPM sand, same blade, controller belief ablation.</span>
-          </div>
-        </div>
+    <header class="wrap">
+      <h1><span class="accent">Granular Sim2Sim:</span> Online Material Belief</h1>
+      <div class="subtitle">for Finite-Budget Granular Excavation</div>
+      <div class="authors">
+        <span>Taehwan Yun</span>
+        <span>HyunJun Jo</span>
+      </div>
+      <div class="venue">Controlled Sim2Sim evidence study</div>
+      <div class="pills">
+        <a class="pill" href="#summary">Summary</a>
+        <a class="pill" href="https://github.com/rachy103/Granular_Sim2Sim">Code</a>
+        <a class="pill" href="assets/videos/raw_rgb_posterior_teaser.mp4">Teaser</a>
+        <a class="pill alt" href="#results">Results</a>
+        <a class="pill alt" href="#reproduce">Reproduce</a>
+      </div>
 
-        <div class="hero-copy">
-          <div>
-            <img class="paper-logo" src="assets/brand/granular-belief-logo.svg" alt="Granular Sim2Sim logo" />
-            <p class="eyebrow">Sim2Sim granular robotics benchmark</p>
-            <h1>Online material belief for robot excavation</h1>
-            <p class="lede">
-              A reproducible synthetic benchmark for estimating granular material family and
-              Mohr-Coulomb-style properties from contact-rich robot interaction, then using
-              that posterior to change excavation behavior under force and transport constraints.
-            </p>
-            <div class="actions">
-              <a class="button" href="wild_material_robustness_paper.md">Paper Draft</a>
-              <a class="button secondary" href="https://github.com/rachy103/Granular_Sim2Sim">Code</a>
-              <a class="button secondary" href="reviewer_audit.md">Reviewer Audit</a>
-              <a class="button secondary" href="reproducibility.md">Reproducibility</a>
-            </div>
-          </div>
-          <div class="metrics" aria-label="Stress benchmark headline metrics">
-            <div class="metric"><strong>0.931</strong><span>family accuracy</span></div>
-            <div class="metric"><strong>0.082</strong><span>property nMAE</span></div>
-            <div class="metric"><strong>0.65</strong><span>posterior depth completion</span></div>
-            <div class="metric"><strong>86.1%</strong><span>0.8 s real-force prefix</span></div>
-          </div>
+      <div class="hero-video media-box">
+        <video
+          class="sync-video"
+          src="assets/videos/raw_rgb_posterior_teaser.mp4?v=factr-layout"
+          poster="assets/posters/raw_rgb_posterior_teaser.jpg?v=factr-layout"
+          controls
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="metadata"
+        ></video>
+        <div class="caption">
+          Project teaser. The video combines a matched rollout, action evidence, and the evidence boundary.
         </div>
       </div>
     </header>
 
-    <main class="wrap">
-      <p class="callout">
-        Scope: this project currently claims synthetic Sim2Sim robustness and scoped
-        control usefulness, not full Real2Sim deployment. The evidence chain is explicit:
-        first estimate a material belief, then test whether that belief changes a downstream
-        excavation action, then add scoped DDBot and real-force sanity checks.
+    <section id="summary" class="wrap">
+      <h2>Technical Summary</h2>
+      <p class="abstract">
+        Robotic excavation in granular media depends on material properties that are not directly
+        visible from the initial surface. We study whether a short raw RGB material-probe sequence
+        can be converted into an online material belief that improves subsequent excavation
+        decisions. The controller uses the posterior mean to select from a finite MPM digging
+        action budget. Across matched MPM conditions, estimated posterior control improves target
+        loss over no posterior and wrong posterior, while remaining close to a GT-property
+        finite-action reference. The current claim is intentionally bounded: this is controlled
+        Sim2Sim evidence, not real-camera closed-loop robot excavation. A formal paper draft is
+        under preparation; this page is a project summary and demo page for the current study.
       </p>
+    </section>
 
-      <section id="method">
-        <div class="section-head">
-          <div>
-            <h2>Method</h2>
-            <p>
-              The core idea is to keep the granular medium inspectable: a blade/scraper
-              interaction produces force and surface-change evidence, the model turns that
-              evidence into an online material posterior, and the controller uses the posterior
-              to choose a safer excavation action.
-            </p>
+    <section id="results" class="wrap">
+      <h2>Results Highlights</h2>
+      <div class="highlights">
+        <div class="highlight-card">
+          <h3>Posterior-Conditioned Excavation</h3>
+          <div class="media-box">
+            <video class="sync-video" src="assets/videos/raw_rgb_posterior_rollout.mp4" poster="assets/posters/raw_rgb_posterior_rollout.jpg" controls muted loop playsinline preload="metadata"></video>
           </div>
+          <div class="caption">Same bed, target, and action budget; only the controller belief changes.</div>
         </div>
-        <div class="steps">
-          <div class="panel step">
-            <h3>Generate paired materials</h3>
-            <p>Sample sand, soil, gravel, and crunching debris with overlapping property ranges and nuisance actions.</p>
+        <div class="highlight-card">
+          <h3>Force-Dominant Stress Test</h3>
+          <div class="media-box">
+            <video class="sync-video" src="assets/videos/posterior_heightfield_mpc_comparison.mp4" poster="assets/posters/posterior_heightfield_mpc_poster.jpg" controls muted loop playsinline preload="metadata"></video>
           </div>
-          <div class="panel step">
-            <h3>Estimate online belief</h3>
-            <p>Fuse MPM visual deformation summaries with wrench and end-effector kinematics frame by frame.</p>
-          </div>
-          <div class="panel step">
-            <h3>Validate Sim2Sim</h3>
-            <p>Run GT and estimated materials through the same property-revealing bulldozing wedge task.</p>
-          </div>
-          <div class="panel step">
-            <h3>Close the loop</h3>
-            <p>Use the posterior to select a trajectory that balances trench depth, transport, spillage, and force risk.</p>
-          </div>
+          <div class="caption">A DDBot-core-style target height-field task used only as a scoped supporting check.</div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="results">
-        <div class="section-head">
-          <div>
-            <h2>Estimator Stress Benchmark</h2>
-            <p>
-              The headline run uses held-out actions, held-out materials, overlapping property
-              ranges, sensor noise, and vision corruptions. These gates are a readiness check
-              for the posterior, not a real-world success claim by themselves.
-            </p>
-          </div>
-          <a href="wild_material_robustness_paper.md">Read paper-style draft</a>
-        </div>
-        <div class="result-strip">
-          <figure>
-            <img src="assets/figures/wild_robustness_summary.png" alt="Wild material robustness summary with confusion matrix and metric gates" />
-            <figcaption>
-              Stress full benchmark. The remaining weakness is concentrated in crunching-to-sand ambiguity.
-            </figcaption>
-          </figure>
-          <figure>
-            <img src="assets/figures/wild_rollout_preview.png" alt="Hard wild sample rollout with property and family posterior curves" />
-            <figcaption>
-              A deliberately hard crunching sample, included to show residual ambiguity rather than only a clean win.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
+    <section id="policies" class="wrap">
+      <h2><span class="accent">Raw-RGB Posterior</span> Control Pipeline</h2>
+      <div class="figure-wide media-box">
+        <img src="assets/figures/posterior_control_pipeline.png" alt="Raw RGB probe to online material posterior, selected action, MPM rollout, and target metrics" />
+      </div>
+      <p class="explain">
+        The main ablation uses raw RGB frames from a short material-probe interaction to update an
+        online material posterior, then uses its mean to choose a finite-budget excavation motion.
+        No-posterior, wrong-posterior, estimated-posterior, and GT-property beliefs are compared
+        with the same initial bed, target, and action budget.
+      </p>
+    </section>
 
-      <section id="policy">
-        <div class="section-head">
-          <div>
-            <h2>Posterior-Conditioned Excavation</h2>
-            <p>
-              The main downstream test keeps the same GT MPM sand bed and the same blade
-              interaction, then changes only the controller belief: no posterior, wrong
-              posterior, estimated posterior, and GT property reference.
-            </p>
-          </div>
+    <section>
+      <div class="task-head">
+        <h2>Task 1: Matched MPM Excavation</h2>
+        <button class="play-toggle" data-state="pause">Pause Videos</button>
+      </div>
+      <div class="task-grid">
+        <div class="media-box">
+          <video class="sync-video" src="assets/videos/raw_rgb_posterior_rollout.mp4" poster="assets/posters/raw_rgb_posterior_rollout.jpg" controls muted loop playsinline preload="metadata"></video>
+          <div class="caption">A representative rollout under four belief inputs.</div>
         </div>
-        <div class="result-strip">
-          <figure>
-            <video src="assets/videos/property_aware_mpm_excavation.mp4?v=posterior-control-finalmetrics" poster="assets/posters/property_aware_mpm_excavation.jpg?v=posterior-control" controls muted playsinline preload="metadata"></video>
-            <figcaption>
-              Main video. The estimated posterior selects a productive valid stroke and
-              reaches the deepest trench completion while keeping force violation at zero.
-            </figcaption>
-          </figure>
-          <figure>
-            <img src="assets/figures/mpm_posterior_control_summary.png" alt="Posterior control ablation summary" />
-            <figcaption>
-              Same material, same target corridor, same blade geometry. The result isolates
-              whether the material belief changes the selected excavation action.
-            </figcaption>
-          </figure>
+        <div class="media-box">
+          <img src="assets/figures/qualitative_rollout_evidence.png" alt="Qualitative rollout figure with probe frames, posterior matches, height maps, force traces, and selected action" />
+          <div class="caption">The evidence figure links posterior evidence, action choice, final height map, and force trace.</div>
         </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Controller belief</th>
-                <th>Trench depth</th>
-                <th>Depth completion</th>
-                <th>Peak force</th>
-                <th>Force violation</th>
-                <th>Intuitive score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>No posterior</td>
-                <td>25.5 mm</td>
-                <td>0.36</td>
-                <td>1595 N</td>
-                <td>0 N</td>
-                <td>135.8</td>
-              </tr>
-              <tr>
-                <td>Wrong posterior</td>
-                <td>0.0 mm</td>
-                <td>0.00</td>
-                <td>2571 N</td>
-                <td>0 N</td>
-                <td>137.6</td>
-              </tr>
-              <tr>
-                <td><strong>Estimated posterior</strong></td>
-                <td><strong>45.6 mm</strong></td>
-                <td><strong>0.65</strong></td>
-                <td>2257 N</td>
-                <td>0 N</td>
-                <td><strong>180.3</strong></td>
-              </tr>
-              <tr>
-                <td>GT property reference</td>
-                <td>39.1 mm</td>
-                <td>0.56</td>
-                <td>2253 N</td>
-                <td>0 N</td>
-                <td>175.8</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="callout">
-          The GT property row is a controller reference under the same finite trajectory budget,
-          not a mathematical optimum. When the estimated row is slightly stronger, the claim is
-          not that the estimate is better than GT; it means the posterior was good enough to pick
-          a GT-level action from the sampled controller candidates.
-        </p>
-      </section>
+      </div>
 
-      <section id="checks">
-        <div class="section-head">
-          <div>
-            <h2>Scoped Comparison And Real-Force Checks</h2>
-            <p>
-              These checks are deliberately bounded. They support the claim that force-aware
-              posterior control is useful, while avoiding a blanket claim that the full official
-              DDBot system or real-world excavation has been solved.
-            </p>
-          </div>
-        </div>
-        <div class="grid">
-          <figure>
-            <video src="assets/videos/ddbot_core_force_posterior.mp4?v=force-posterior" poster="assets/posters/ddbot_core_force_posterior.jpg?v=force-posterior" controls muted playsinline preload="metadata"></video>
-            <figcaption>
-              DDBot-style target digging core reimplementation. Under a vision-ambiguous,
-              force-dominant setting, force posterior control reduces height-map error and
-              force violation relative to a target-only baseline.
-            </figcaption>
-          </figure>
-          <figure>
-            <img src="assets/figures/ddbot_core_force_posterior_summary.png" alt="DDBot core force posterior benchmark summary" />
-            <figcaption>
-              Scope matters: both controllers use the same abstract blade/tool action model,
-              target, and budget. This is not the full official DDBot robot mesh or runtime.
-            </figcaption>
-          </figure>
-          <figure>
-            <img src="assets/figures/aalto_summary_accuracy.png" alt="Aalto real force classification summary" />
-            <figcaption>
-              Real-data sanity check on a public force/torque dataset: granular material
-              identity is visible in force features, not only in synthetic MPM summaries.
-            </figcaption>
-          </figure>
-          <figure>
-            <img src="assets/figures/aalto_prefix_accuracy.png" alt="Aalto prefix accuracy curve" />
-            <figcaption>
-              A 0.8 s interaction prefix reaches 86.1% accuracy, supporting short-prefix
-              online belief updates before long excavation rollouts.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <section id="videos">
-        <div class="section-head">
-          <div>
-            <h2>Policy And Sim2Sim Videos</h2>
-            <p>
-              The main video is pinned at the top of the page. These supporting videos show
-              property posterior overlays, GT versus estimated material behavior, and the fixed
-              interaction-region render.
-            </p>
-          </div>
-        </div>
-        <div class="grid">
-          <figure>
-            <video src="assets/videos/excavation_policy_compare.mp4?v=sim2sim-brand" poster="assets/posters/excavation_policy_compare.jpg?v=sim2sim-brand" controls muted playsinline preload="metadata"></video>
-            <figcaption>
-              Earlier fixed no-model excavation versus property-aware excavation visualization.
-            </figcaption>
-          </figure>
-          <figure>
-            <video src="assets/videos/density_mujoco_eef_property_overlay.mp4?v=sim2sim-brand" poster="assets/posters/density_mujoco_eef_property_overlay.jpg?v=sim2sim-brand" controls muted playsinline preload="metadata"></video>
-            <figcaption>
-              MuJoCo-rendered end effector over MPM density with online property posterior and GT bands.
-            </figcaption>
-          </figure>
-          <figure>
-            <video src="assets/videos/sim2sim_bulldozing_wedge.mp4?v=sim2sim-brand" poster="assets/posters/sim2sim_bulldozing_wedge.jpg?v=sim2sim-brand" controls muted playsinline preload="metadata"></video>
-            <figcaption>
-              GT granular material versus estimated granular material under the same bulldozing-wedge task.
-            </figcaption>
-          </figure>
-          <figure>
-            <video src="assets/videos/density_mujoco_eef_render.mp4?v=sim2sim-brand" poster="assets/posters/density_mujoco_eef_render.jpg?v=sim2sim-brand" controls muted playsinline preload="metadata"></video>
-            <figcaption>
-              Canonical fixed interaction-region render showing only the end-effector/tool over the density view.
-            </figcaption>
-          </figure>
-          <figure>
-            <img src="assets/figures/wild_review_audit_main.png" alt="Reviewer audit main variant summary" />
-            <figcaption>
-              Reviewer audit preview with ablations for leakage, modality dependence, and calibration.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <section id="audit">
-        <div class="section-head">
-          <div>
-            <h2>Reviewer Audit</h2>
-            <p>
-              The audit is intentionally adversarial: if a simpler path can explain the score,
-              it should show up here before the claim becomes too polished.
-            </p>
-          </div>
-          <a href="reviewer_audit.md">Open full audit</a>
-        </div>
-        <div class="table-scroll">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Variant</th>
-              <th>Family Acc</th>
-              <th>Worst</th>
-              <th>Gate</th>
-              <th>Interpretation</th>
+              <th>Belief input</th>
+              <th class="num">Target loss</th>
+              <th class="num">Completion</th>
+              <th class="num">Force violation</th>
+              <th class="num">Strict success</th>
+              <th class="num">GT action</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>main</td><td>0.859</td><td>0.812</td><td>pass</td><td>Quick stress run remains above the gate.</td></tr>
-            <tr><td>no property-family head</td><td>0.849</td><td>0.812</td><td>pass</td><td>Joint head helps, but is not the only signal source.</td></tr>
-            <tr><td>sensor only</td><td>0.740</td><td>0.479</td><td>fail</td><td>Force and kinematics alone are not enough in this setup.</td></tr>
-            <tr><td>vision only</td><td>0.802</td><td>0.729</td><td>pass</td><td>Deformation summaries carry strong material information.</td></tr>
-            <tr><td>context only</td><td>0.250</td><td>0.021</td><td>fail</td><td>Chance-level result weakens the label leakage concern.</td></tr>
-            <tr><td>no sigma calibration</td><td>0.859</td><td>0.792</td><td>pass</td><td>Calibration mostly affects uncertainty quality.</td></tr>
+            <tr>
+              <td>No posterior</td>
+              <td class="num">2.198</td>
+              <td class="num">1.19</td>
+              <td class="num">446 N</td>
+              <td class="num">2/24</td>
+              <td class="num">0/24</td>
+            </tr>
+            <tr>
+              <td>Wrong posterior</td>
+              <td class="num">2.629</td>
+              <td class="num">0.59</td>
+              <td class="num">2852 N</td>
+              <td class="num">0/24</td>
+              <td class="num">0/24</td>
+            </tr>
+            <tr>
+              <td><strong>Estimated posterior</strong></td>
+              <td class="num"><strong>2.010</strong></td>
+              <td class="num">1.03</td>
+              <td class="num">420 N</td>
+              <td class="num">5/24</td>
+              <td class="num"><strong>12/24</strong></td>
+            </tr>
+            <tr>
+              <td>GT property reference</td>
+              <td class="num">1.972</td>
+              <td class="num">0.98</td>
+              <td class="num">338 N</td>
+              <td class="num">2/24</td>
+              <td class="num">24/24</td>
+            </tr>
           </tbody>
         </table>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="proposal">
-        <div class="section-head">
-          <div>
-            <h2>Mini Proposal: Construction-Site Granular Digital Twin</h2>
-            <p>
-              The next research target is a site-level digital twin for sand, soil, and
-              aggregate handling: estimate material belief from machine interaction, update
-              the terrain twin, and replan excavation before overload or spillage happens.
-            </p>
-          </div>
+    <section>
+      <div class="task-head">
+        <h2>Task 2: Evidence Stack and Failure Modes</h2>
+      </div>
+      <div class="task-grid">
+        <div class="media-box">
+          <img src="assets/figures/evidence_dashboard.png" alt="Evidence dashboard showing target loss, paired robustness, action changes, and strict success audit" />
+          <div class="caption">Target loss, paired robustness, action changes, and metric-artifact audit.</div>
         </div>
-        <div class="steps">
-          <div class="panel step">
-            <h3>Sense the site</h3>
-            <p>Fuse RGB-D or LiDAR height maps with machine pose, bucket trajectory, hydraulic pressure, or F/T proxies.</p>
-          </div>
-          <div class="panel step">
-            <h3>Update material belief</h3>
-            <p>Maintain an online posterior over density, friction, interface friction, cohesion, and moisture-like proxies.</p>
-          </div>
-          <div class="panel step">
-            <h3>Roll out the twin</h3>
-            <p>Use a fast height-field or MPM surrogate to predict terrain change, reaction force, work, and overflow risk.</p>
-          </div>
-          <div class="panel step">
-            <h3>Optimize the next action</h3>
-            <p>Choose the next bucket/tool motion against target shape, force limits, cycle time, and spillage constraints.</p>
-          </div>
+        <div class="media-box">
+          <img src="assets/figures/shuffled_posterior_failure_audit.png" alt="Shuffled posterior failure audit showing under-digging artifact" />
+          <div class="caption">Negative control: scalar loss can improve through conservative under-digging.</div>
         </div>
-        <p class="callout">
-          Proposed contribution: a construction digital twin that does not treat sand as a fixed visual surface.
-          It continuously updates material uncertainty from interaction and uses that uncertainty in planning.
-        </p>
-      </section>
+        <div class="media-box">
+          <img src="assets/figures/policy_regret_summary.png" alt="Policy regret and action-distance summary" />
+          <div class="caption">Action-level audit: estimated posterior moves closer to the GT finite action.</div>
+        </div>
+        <div class="media-box">
+          <img src="assets/figures/trench_feasibility_audit.png" alt="Strict trench feasibility audit" />
+          <div class="caption">Strict depth and force feasibility audit prevents hiding behind one scalar score.</div>
+        </div>
+      </div>
+    </section>
 
-      <section id="reproduce">
-        <div class="section-head">
-          <div>
-            <h2>Reproducibility</h2>
-            <p>
-              The repo keeps generated outputs out of source control. Figures and videos on this
-              page are either committed page assets or regenerated from versioned configs.
-            </p>
-          </div>
-          <a href="reproducibility.md">Full reproducibility contract</a>
+    <section id="checks">
+      <div class="task-head">
+        <h2>Task 3: Supporting Checks</h2>
+      </div>
+      <div class="task-grid">
+        <div class="media-box">
+          <video class="sync-video" src="assets/videos/posterior_heightfield_mpc_comparison.mp4" poster="assets/posters/posterior_heightfield_mpc_poster.jpg" controls muted loop playsinline preload="metadata"></video>
+          <div class="caption">DDBot-core-style target height-field benchmark with force posterior replanning.</div>
         </div>
-        <div class="split">
-          <div class="panel">
-            <h3>Fresh clone</h3>
-            <pre><code>git clone https://github.com/rachy103/Granular_Sim2Sim.git
+        <div class="media-box">
+          <img src="assets/figures/ddbot_core_force_posterior_summary.png" alt="DDBot-core force-posterior stress test summary" />
+          <div class="caption">A scoped stress test, not full official DDBot superiority.</div>
+        </div>
+        <div class="media-box">
+          <img src="assets/figures/modality_ablation_summary.png" alt="Modality ablation summary under visually ambiguous inputs" />
+          <div class="caption">When vision is ambiguous, raw wrench evidence improves the material posterior.</div>
+        </div>
+        <div class="media-box">
+          <img src="assets/figures/real_soil_rgb_bridge_sheet.png" alt="Real-camera soil image bridge examples and predictions" />
+          <div class="caption">Static real-camera soil image bridge: supporting evidence only.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Evidence Boundary</h2>
+      <div class="scope table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Evidence in this page</th>
+              <th>Not claimed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Control</td>
+              <td>24/64 matched MPM ablations</td>
+              <td>Real-robot excavation</td>
+            </tr>
+            <tr>
+              <td>Vision</td>
+              <td>Raw procedural RGB video tensors</td>
+              <td>Real-camera video transfer</td>
+            </tr>
+            <tr>
+              <td>Real pixels</td>
+              <td>Static soil RGB with particle-size labels</td>
+              <td>Closed-loop robot control</td>
+            </tr>
+            <tr>
+              <td>Force</td>
+              <td>Force/torque data and modality audit</td>
+              <td>Hidden wrench in the main RGB result</td>
+            </tr>
+            <tr>
+              <td>DDBot</td>
+              <td>Scoped DDBot-core stress test</td>
+              <td>Full official DDBot superiority</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="reproduce">
+      <h2>Reproduce</h2>
+      <pre><code>git clone https://github.com/rachy103/Granular_Sim2Sim.git
 cd Granular_Sim2Sim
 ./install.sh --locked
-make smoke</code></pre>
-          </div>
-          <div class="panel">
-            <h3>Headline artifacts</h3>
-            <pre><code>make render-density-eef
-make sim2sim-wedge
-make excavation-policy
-make wild-robustness-stress
-make wild-review-audit</code></pre>
-          </div>
-        </div>
-      </section>
 
-      <section id="citation">
-        <h2>Citation</h2>
-        <pre><code>@misc{granularsim2sim2026,
-  title  = {Granular Sim2Sim: Online Material Belief for Robot Excavation},
-  author = {Rachy103 and contributors},
-  year   = {2026},
-  url    = {https://github.com/rachy103/Granular_Sim2Sim}
-}</code></pre>
-      </section>
-    </main>
+python experiments/raw_rgb_posterior_excavation/run_rgb_posterior_mpm_benchmark.py
+python experiments/raw_rgb_posterior_excavation/make_qualitative_rollout_figure.py
+python experiments/ddbot_posterior_heightfield_mpc/run_posterior_ablation.py
+python scripts/build_project_page_media.py</code></pre>
+    </section>
 
     <footer>
-      <div class="wrap">
-        Built from reproducible local artifacts in <code>outputs/</code> and published through
-        <code>docs/</code> as a GitHub Pages project site.
-      </div>
+      Granular Sim2Sim. Controlled Sim2Sim evidence for online material belief and granular excavation selection.
     </footer>
+
+    <script>
+      const toggle = document.querySelector(".play-toggle");
+      const videos = Array.from(document.querySelectorAll(".sync-video"));
+
+      function setVideoState(playing) {
+        videos.forEach((video) => {
+          video.muted = true;
+          if (playing) {
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
+        if (toggle) {
+          toggle.dataset.state = playing ? "pause" : "play";
+          toggle.textContent = playing ? "Pause Videos" : "Play Videos";
+        }
+      }
+
+      if (toggle) {
+        toggle.addEventListener("click", () => {
+          setVideoState(toggle.dataset.state !== "pause");
+        });
+      }
+
+      window.addEventListener("load", () => setVideoState(true));
+    </script>
   </body>
 </html>
