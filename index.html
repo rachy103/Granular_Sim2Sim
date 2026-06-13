@@ -223,6 +223,27 @@
         max-width: 1080px;
       }
 
+      .hero-pair {
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+        gap: 16px;
+        align-items: start;
+        margin: 30px auto 0;
+        max-width: 1180px;
+      }
+
+      .hero-note {
+        max-width: 1040px;
+        margin: 14px auto 0;
+        color: #435163;
+        font-size: 15px;
+        text-align: center;
+      }
+
+      .hero-note strong {
+        color: var(--blue);
+      }
+
       .media-box {
         overflow: hidden;
         border: 1px solid var(--line);
@@ -422,6 +443,7 @@
         }
 
         .highlights,
+        .hero-pair,
         .task-grid,
         .task-grid.three {
           grid-template-columns: 1fr;
@@ -464,21 +486,42 @@
         <a class="pill alt" href="#reproduce">Reproduce</a>
       </div>
 
-      <div class="hero-video media-box">
-        <video
-          class="sync-video"
-          src="assets/videos/raw_rgb_posterior_teaser.mp4?v=h264-20260614"
-          poster="assets/posters/raw_rgb_posterior_teaser.jpg?v=h264-20260614"
-          controls
-          autoplay
-          muted
-          loop
-          playsinline
-          preload="metadata"
-        ></video>
-        <div class="caption">
-          Project teaser. The video combines a matched rollout, action evidence, and the evidence boundary.
+      <div class="hero-pair">
+        <div class="media-box">
+          <video
+            class="sync-video"
+            src="assets/videos/raw_rgb_interaction_view.mp4?v=paired-20260614"
+            poster="assets/posters/raw_rgb_interaction_view.jpg?v=paired-20260614"
+            controls
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+          ></video>
+          <div class="caption">
+            Simulated interaction view. The blade moves through the granular bed and creates a trench and ridge.
+          </div>
         </div>
+        <div class="media-box">
+          <video
+            class="sync-video"
+            src="assets/videos/raw_rgb_posterior_teaser.mp4?v=paired-20260614"
+            poster="assets/posters/raw_rgb_posterior_teaser.jpg?v=paired-20260614"
+            controls
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+          ></video>
+          <div class="caption">
+            Height-map readout. Warm colors indicate piled material; cool colors indicate the dug trench.
+          </div>
+        </div>
+      </div>
+      <div class="hero-note">
+        <strong>How to read the heat map:</strong> it is the same granular interaction shown from above as surface height, so the colors encode where material was removed or accumulated.
       </div>
     </header>
 
